@@ -21,6 +21,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { PlayerSearchModal } from "@/components/player-search-modal"
 
 interface Player {
   id: string
@@ -120,10 +121,7 @@ export default function PitStation() {
                     <Button variant="ghost" className="justify-start">
                       Issue Reward
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      className="justify-start text-red-500"
-                    >
+                    <Button variant="ghost" className="justify-start text-red-500">
                       Log Out
                     </Button>
                   </div>
@@ -141,14 +139,7 @@ export default function PitStation() {
             </div>
           </div>
           <div className="flex items-center gap-2 p-4">
-            <Input
-              placeholder="Search players..."
-              className="max-w-sm"
-              type="search"
-            />
-            <Button variant="outline" size="icon">
-              <Search className="h-4 w-4" />
-            </Button>
+            <PlayerSearchModal />
           </div>
         </header>
 
