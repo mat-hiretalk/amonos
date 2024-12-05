@@ -24,6 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PlayerSearchModal } from "@/components/player-search-modal"
 import { CasinoSelector } from "@/components/casino-selector"
 import { createClient } from '@/utils/supabase/client'
+import { CasinoFloorView } from "./casino-floor-view"
 
 interface Player {
   id: string
@@ -197,6 +198,7 @@ export default function PitStation() {
             </TableBody>
           </Table>
         </div>
+        <CasinoFloorView />
       </div>
 
       {/* Right Sidebar - Player Details */}
