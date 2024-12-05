@@ -2,9 +2,11 @@ import { Button } from "@/components/ui/button"
 import { Database } from "@/database.types"
 import { User, UserPlus } from 'lucide-react'
 
+type Player = Database['public']['Tables']['player']['Row']
+
 interface SeatProps {
   seatNumber: number
-  player: Database['public']['Tables']['player']['Row'] | null
+  player: Player | null
   onSeatPlayer: (seatNumber: number) => void
 }
 
@@ -15,7 +17,7 @@ export function TableSeat({ seatNumber, player, onSeatPlayer }: SeatProps) {
         <User className="h-4 w-4" />
         <div className="text-sm">
           <p className="font-medium">{player.name}</p>
-          <p className="text-muted-foreground">${player.dob}</p>
+          <p className="text-muted-foreground text-xs">{player.email}</p>
         </div>
       </div>
     )
