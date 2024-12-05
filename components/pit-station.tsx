@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Bell, History, Menu, Search, User, UserCircle } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/sheet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PlayerSearchModal } from "@/components/player-search-modal"
+import { CasinoSelector } from "@/components/casino-selector"
+import { createClient } from '@/utils/supabase/client'
 
 interface Player {
   id: string
@@ -36,65 +38,84 @@ interface Player {
   status: "active" | "inactive" | "warning"
 }
 
+interface Visit {
+  id: string
+  player_id: string
+  check_in_date: string
+  check_out_date: string | null
+  player: {
+    name: string | null
+  }
+}
+
 export default function PitStation() {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null)
+  const [selectedCasino, setSelectedCasino] = useState<string>('')
+  const [activeVisits, setActiveVisits] = useState<Visit[]>([])
+  const supabase = createClient()
 
-  const players: Player[] = [
-    {
-      id: "1",
-      name: "Johnson, A",
-      type: "A",
-      table: "TS-1",
-      seat: 1,
-      avgBet: 10,
-      cashIn: 200,
-      startTime: "15:04",
-      duration: "0:33",
-      status: "active",
-    },
-    {
-      id: "2",
-      name: "Crafton, R",
-      type: "M(M)",
-      table: "LLBJ-2",
-      seat: 2,
-      avgBet: 50,
-      cashIn: 500,
-      startTime: "15:25",
-      duration: "0:12",
-      status: "active",
-    },
-    {
-      id: "3",
-      name: "Kitchen, G",
-      type: "F(M)",
-      table: "LLBJ-2",
-      seat: 4,
-      avgBet: 20,
-      cashIn: 250,
-      startTime: "15:06",
-      duration: "0:31",
-      status: "warning",
-    },
-    {
-      id: "4",
-      name: "Walker, R",
-      type: "N(M)",
-      table: "LLBJ-3",
-      seat: 4,
-      avgBet: 100,
-      cashIn: 1000,
-      startTime: "15:27",
-      duration: "0:10",
-      status: "active",
-    },
-  ]
+  // Fetch active visits when casino changes
+  useEffect(() => {
+    if (!selectedCasino) return
+
+    const fetchActiveVisits = async () => {
+      const { data, error } = await supabase
+        .from('visit')
+        .select(`
+          id,
+          player_id,
+          check_in_date,
+          check_out_date,
+          player:player!player_id(name)
+        `)
+        .eq('casino_id', selectedCasino)
+        .is('check_out_date', null)
+        .order('check_in_date', { ascending: false })
+      console.log(data)
+      if (error) {
+        console.error('Error fetching visits:', error)
+        return
+      }
+
+      const formattedData = data.map(visit => ({
+        ...visit,
+        player: Array.isArray(visit.player) ? visit.player[0] : visit.player
+      }))
+
+      setActiveVisits(formattedData)
+    }
+
+    fetchActiveVisits()
+
+    // Subscribe to changes in visits
+    const channel = supabase
+      .channel('visits_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'visits',
+          filter: `casino_id=eq.${selectedCasino}`,
+        },
+        () => {
+          fetchActiveVisits()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [selectedCasino])
+
+  const handleCasinoChange = (casinoId: string) => {
+    setSelectedCasino(casinoId)
+  }
 
   return (
     <div className="fixed inset-0 w-screen h-screen bg-background">
-      {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {/* Top Navigation */}
         <header className="border-b">
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center gap-4">
@@ -129,54 +150,50 @@ export default function PitStation() {
               </Sheet>
               <h1 className="text-xl font-bold">Pit Station</h1>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon">
-                <Bell className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon">
-                <UserCircle className="h-4 w-4" />
-              </Button>
+            <div className="flex items-center gap-4">
+              <CasinoSelector onCasinoChange={handleCasinoChange} />
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="icon">
+                  <Bell className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon">
+                  <UserCircle className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2 p-4">
-            <PlayerSearchModal />
+            <PlayerSearchModal selectedCasino={selectedCasino} />
           </div>
         </header>
 
-        {/* Table View */}
         <div className="flex-1 p-4 overflow-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Player</TableHead>
-                <TableHead>Table</TableHead>
-                <TableHead>Seat</TableHead>
-                <TableHead>Avg Bet</TableHead>
-                <TableHead>Cash In</TableHead>
-                <TableHead>Start Time</TableHead>
+                <TableHead>Check In Time</TableHead>
                 <TableHead>Duration</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {players.map((player) => (
-                <TableRow
-                  key={player.id}
-                  className={
-                    player.status === "warning"
-                      ? "bg-red-50 dark:bg-red-950"
-                      : undefined
-                  }
-                  onClick={() => setSelectedPlayer(player)}
-                >
-                  <TableCell className="font-medium">{player.name}</TableCell>
-                  <TableCell>{player.table}</TableCell>
-                  <TableCell>{player.seat}</TableCell>
-                  <TableCell>{player.avgBet}</TableCell>
-                  <TableCell>{player.cashIn}</TableCell>
-                  <TableCell>{player.startTime}</TableCell>
-                  <TableCell>{player.duration}</TableCell>
-                </TableRow>
-              ))}
+              {activeVisits.map((visit) => {
+                const duration = new Date().getTime() - new Date(visit.check_in_date).getTime()
+                const hours = Math.floor(duration / (1000 * 60 * 60))
+                const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60))
+                
+                return (
+                  <TableRow key={visit.id}>
+                    <TableCell className="font-medium">{visit.player.name || 'Unknown'}</TableCell>
+                    <TableCell>{new Date(visit.check_in_date).toLocaleTimeString()}</TableCell>
+                    <TableCell>{`${hours}:${minutes.toString().padStart(2, '0')}`}</TableCell>
+                    <TableCell>
+                      <Button variant="outline" size="sm">View Details</Button>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         </div>
