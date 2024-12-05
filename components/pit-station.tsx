@@ -41,7 +41,7 @@ interface Player {
 
 interface Visit {
   id: string
-  player_id: string
+  player_id: string | null
   check_in_date: string
   check_out_date: string | null
   player: {
