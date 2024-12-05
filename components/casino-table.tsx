@@ -7,7 +7,13 @@ import { TableSeat } from "./table-seat"
 import { PlayerSearchModal } from "./player-search-modal"
 import { Database } from '@/database.types'
 
-type RatingSlip = Database['public']['Tables']['ratingslip']['Row']
+type RatingSlip = Database['public']['Tables']['ratingslip']['Row'] & {
+  visit: {
+    player: {
+      name: string
+    }
+  }
+}
 type Player = Database['public']['Tables']['player']['Row']
 
 export interface TableData {
@@ -87,7 +93,6 @@ export function CasinoTable({ table, onUpdateTable, selectedCasino }: CasinoTabl
                 seatNumber={seatNumber}
                 player={player}
                 occupiedBy={table.ratingSlips.find(slip => {
-                  console.log("slip", slip.seat_number, seatNumber)
                   return slip.seat_number === seatNumber
                 })}
                 onSeatPlayer={handleSeatPlayer}
