@@ -29,9 +29,16 @@ export function CasinoFloorView() {
       // Fetch active rating slips (where end_time is null)
       const { data: slipData, error: slipError } = await supabase
         .from('ratingslip')
-        .select('*')
+        .select(`
+          *,
+          visit:visit_id (
+            player:player_id (
+              name
+            )
+          )
+        `)
         .is('end_time', null)
-
+      console.log("slipData", slipData)
       if (slipError) {
         console.error('Error fetching rating slips:', slipError)
         return
@@ -122,12 +129,6 @@ export function CasinoFloorView() {
                 status: "active",
                 hasVIP: false,
                 ratingSlips: tableRatingSlips,
-                occupiedSeats: tableRatingSlips.reduce((acc, slip) => {
-                  if (slip.seat_number) {
-                    acc[slip.seat_number] = slip
-                  }
-                  return acc
-                }, {} as {[key: number]: RatingSlip})
               }} 
               selectedCasino={table.casino_id}
               onUpdateTable={handleUpdateTable} 

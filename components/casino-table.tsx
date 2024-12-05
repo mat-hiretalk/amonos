@@ -18,7 +18,6 @@ export interface TableData {
   status: "active" | "inactive"
   hasVIP: boolean
   ratingSlips: RatingSlip[]
-  occupiedSeats: {[seatNumber: number]: RatingSlip}
 }
 
 interface CasinoTableProps {
@@ -87,7 +86,10 @@ export function CasinoTable({ table, onUpdateTable, selectedCasino }: CasinoTabl
                 key={index}
                 seatNumber={seatNumber}
                 player={player}
-                occupiedBy={table.occupiedSeats[seatNumber]}
+                occupiedBy={table.ratingSlips.find(slip => {
+                  console.log("slip", slip.seat_number, seatNumber)
+                  return slip.seat_number === seatNumber
+                })}
                 onSeatPlayer={handleSeatPlayer}
               />
             )
