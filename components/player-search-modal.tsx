@@ -1,26 +1,10 @@
 'use client'
 
-import { useState } from 'react'
-import { Search } from 'lucide-react'
-import { Button } from "@/components/ui/button"
+import { useState } from "react"
+
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { createClient } from '@/utils/supabase/client'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
+import { createClient } from "@/utils/supabase/client"
 
 interface Player {
   id: string
@@ -31,202 +15,66 @@ interface Player {
   dob: string | null
 }
 
-interface Visit {
-  id: string
-  player_id: string
-  casino_id: string
-  check_in_date: string
-  check_out_date: string | null
-  player: {
-    name: string | null
-  }
-}
-
 interface PlayerSearchModalProps {
   selectedCasino: string
+  mode: "seat" | "other"  // Allows for different modal behaviors
+  onPlayerSelected: (player: Player) => void
 }
 
-export function PlayerSearchModal({ selectedCasino }: PlayerSearchModalProps) {
-  const [searchTerm, setSearchTerm] = useState('')
-  const [minAge, setMinAge] = useState('')
-  const [maxAge, setMaxAge] = useState('')
+export function PlayerSearchModal({ selectedCasino, mode, onPlayerSelected }: PlayerSearchModalProps) {
+  const [searchTerm, setSearchTerm] = useState("")
   const [searchResults, setSearchResults] = useState<Player[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const supabase = createClient()
+   const supabase =  createClient();
 
   const handleSearch = async () => {
-    const supabase = createClient()
+    if (!searchTerm.trim()) return
     
-    // Calculate date ranges based on age inputs
-    const now = new Date()
-    const maxDate = minAge ? 
-      new Date(now.getFullYear() - parseInt(minAge), now.getMonth(), now.getDate()) : null
-    const minDate = maxAge ? 
-      new Date(now.getFullYear() - parseInt(maxAge), now.getMonth(), now.getDate()) : null
-
-    let query = supabase
+    setIsLoading(true)
+    const { data, error } = await supabase
       .from('player')
       .select('*')
-      
-    // Add name search if provided
-    if (searchTerm) {
-      query = query.ilike('name', `%${searchTerm}%`)
-    }
+      .or(`name.ilike.%${searchTerm}%,phone_number.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`)
+      .limit(10)
+    setIsLoading(false)
     
-    // Add age range filters if provided
-    if (maxDate) {
-      query = query.lte('dob', maxDate.toISOString().split('T')[0])
-    }
-    if (minDate) {
-      query = query.gte('dob', minDate.toISOString().split('T')[0])
-    }
-
-    const { data, error } = await query
-
     if (error) {
-      console.error('Error fetching players:', error)
+      console.error('Error searching players:', error)
       return
     }
 
     setSearchResults(data || [])
   }
 
-  const calculateAge = (dob: string | null) => {
-    if (!dob) return 'N/A'
-    const birthDate = new Date(dob)
-    const today = new Date()
-    let age = today.getFullYear() - birthDate.getFullYear()
-    const monthDiff = today.getMonth() - birthDate.getMonth()
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--
-    }
-    return age
-  }
-
-  const handleStartVisit = async (player: Player) => {
-    if (!selectedCasino) {
-      console.error('No casino selected')
-      return
-    }
-
-    setIsLoading(true)
-    try {
-      const { data: visit, error } = await supabase
-        .from('visit')
-        .insert([
-          {
-            player_id: player.id,
-            casino_id: selectedCasino,
-            check_in_date: new Date().toISOString(),
-          }
-        ])
-        .select()
-        .single()
-
-      if (error) throw error
-
-      // Close the dialog after successful visit creation
-      const dialogElement = document.querySelector('[role="dialog"]')
-      if (dialogElement) {
-        const closeButton = dialogElement.querySelector('button[aria-label="Close"]')
-        if (closeButton instanceof HTMLButtonElement) {
-          closeButton.click()
-        }
-      }
-    } catch (error) {
-      console.log(error)
-      console.error('Error creating visit:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline" disabled={!selectedCasino}>
-          <Search className="h-4 w-4 mr-2" />
-          Find Player
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        <Input
+          placeholder="Search by name, phone, or email..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+        />
+        <Button onClick={handleSearch} disabled={isLoading}>
+          Search
         </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Find Player</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Name
-              </Label>
-              <Input
-                id="name"
-                placeholder="Search by name"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="age" className="text-right">
-                Age Range
-              </Label>
-              <Input
-                id="minAge"
-                placeholder="Min"
-                value={minAge}
-                onChange={(e) => setMinAge(e.target.value)}
-                className="col-span-1"
-              />
-              <Input
-                id="maxAge"
-                placeholder="Max"
-                value={maxAge}
-                onChange={(e) => setMaxAge(e.target.value)}
-                className="col-span-1"
-              />
+      </div>
+
+      <div className="space-y-2">
+        {searchResults.map((player) => (
+          <div
+            key={player.id}
+            className="p-3 border rounded-lg hover:bg-muted cursor-pointer"
+            onClick={() => onPlayerSelected(player)}
+          >
+            <div className="font-medium">{player.name}</div>
+            <div className="text-sm text-muted-foreground">
+              {player.phone_number} • {player.email}
             </div>
           </div>
-          <Button onClick={handleSearch} className="w-full">
-            <Search className="h-4 w-4 mr-2" />
-            Search
-          </Button>
-          {searchResults.length > 0 && (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Age</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {searchResults.map((player) => (
-                  <TableRow key={player.id}>
-                    <TableCell>{player.name || 'N/A'}</TableCell>
-                    <TableCell>{calculateAge(player.dob)}</TableCell>
-                    <TableCell>{player.email || 'N/A'}</TableCell>
-                    <TableCell>{player.phone_number || 'N/A'}</TableCell>
-                    <TableCell>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handleStartVisit(player)}
-                        disabled={isLoading}
-                      >
-                        Start Visit
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
+        ))}
+      </div>
+    </div>
   )
 }
 

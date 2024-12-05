@@ -1,28 +1,15 @@
 "use client"
 
 import React, { useState, useEffect } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { CasinoTable, TableData } from './casino-table'
+import { createClient } from '@/utils/supabase/client'
+import { Database } from '@/database.types'
 
-interface GamingTable {
-  gaming_table_id: string
-  table_name: string
-  table_description: string
-  casino_id: string
-  game_settings_id: string
-  settings_name: string
-  seats_available: number
-  version: string
-  house_edge: number
-  average_rounds_per_hour: number
-  point_multiplier: number
-  points_conversion_rate: number
-  active_from: string
-}
+type GamingTable = Database['public']['Tables']['activetablesandsettings']['Row']
 
 export function CasinoFloorView() {
   const [tables, setTables] = useState<GamingTable[]>([])
-  const supabase = createClientComponentClient()
+  const supabase =  createClient();
 
   useEffect(() => {
     async function fetchTables() {
@@ -79,6 +66,7 @@ export function CasinoFloorView() {
             status: "active",
             hasVIP: false // This would need to come from a different table/view
           }} 
+          selectedCasino={table.casino_id}
           onUpdateTable={handleUpdateTable} 
         />
       ))}

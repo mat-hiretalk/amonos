@@ -1,16 +1,18 @@
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { DollarSign, Star, Users } from 'lucide-react'
 import { TableSeat } from "./table-seat"
+import { PlayerSearchModal } from "./player-search-modal"
 
 interface Player {
-  name: string
-  balance: number
+  id: string
+  name: string | null
+  email: string | null
+  phone_number: string | null
+  company_id: string | null
+  dob: string | null
 }
 
 export interface TableData {
@@ -24,33 +26,37 @@ export interface TableData {
 interface CasinoTableProps {
   table: TableData
   onUpdateTable: (updatedTable: TableData) => void
+  selectedCasino: string
 }
 
-export function CasinoTable({ table, onUpdateTable }: CasinoTableProps) {
+export function CasinoTable({ table, onUpdateTable, selectedCasino }: CasinoTableProps) {
   const [selectedSeat, setSelectedSeat] = useState<number | null>(null)
-  const [newPlayerName, setNewPlayerName] = useState("")
-  const [newPlayerBalance, setNewPlayerBalance] = useState("")
 
   const handleSeatPlayer = (seatNumber: number) => {
     setSelectedSeat(seatNumber)
   }
 
-  const handleConfirmSeatPlayer = () => {
-    if (selectedSeat !== null && newPlayerName && newPlayerBalance) {
-      const updatedSeats = [...table.seats]
-      updatedSeats[selectedSeat - 1] = { name: newPlayerName, balance: parseInt(newPlayerBalance) }
-      
-      const updatedTable: TableData = {
-        ...table,
-        seats: updatedSeats,
-        status: "active"
-      }
-      
-      onUpdateTable(updatedTable)
-      setSelectedSeat(null)
-      setNewPlayerName("")
-      setNewPlayerBalance("")
+  const handlePlayerSelected = (player: Player) => {
+    if (selectedSeat === null) return
+
+    const updatedSeats = [...table.seats]
+    updatedSeats[selectedSeat - 1] = {
+      id: player.id,
+      name: player.name,
+      email: player.email,
+      phone_number: player.phone_number,
+      company_id: player.company_id,
+      dob: player.dob
     }
+    
+    const updatedTable: TableData = {
+      ...table,
+      seats: updatedSeats,
+      status: "active"
+    }
+    
+    onUpdateTable(updatedTable)
+    setSelectedSeat(null)
   }
 
   return (
@@ -78,7 +84,7 @@ export function CasinoTable({ table, onUpdateTable }: CasinoTableProps) {
             <TableSeat
               key={index}
               seatNumber={index + 1}
-              player={player || undefined}
+              player={player || null}
               onSeatPlayer={handleSeatPlayer}
             />
           ))}
@@ -86,38 +92,17 @@ export function CasinoTable({ table, onUpdateTable }: CasinoTableProps) {
       </CardContent>
 
       <Dialog open={selectedSeat !== null} onOpenChange={() => setSelectedSeat(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[768px]">
           <DialogHeader>
-            <DialogTitle>Seat New Player at {table.id}, Seat {selectedSeat}</DialogTitle>
+            <DialogTitle>Select Player for Seat {selectedSeat}</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Name
-              </Label>
-              <Input
-                id="name"
-                value={newPlayerName}
-                onChange={(e) => setNewPlayerName(e.target.value)}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="balance" className="text-right">
-                Balance
-              </Label>
-              <Input
-                id="balance"
-                type="number"
-                value={newPlayerBalance}
-                onChange={(e) => setNewPlayerBalance(e.target.value)}
-                className="col-span-3"
-              />
-            </div>
+          <div className="py-4">
+            <PlayerSearchModal 
+              selectedCasino={selectedCasino} 
+              mode="seat"
+              onPlayerSelected={handlePlayerSelected}
+            />
           </div>
-          <DialogFooter>
-            <Button onClick={handleConfirmSeatPlayer}>Confirm</Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </Card>
