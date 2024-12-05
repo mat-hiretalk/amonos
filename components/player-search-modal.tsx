@@ -5,7 +5,7 @@ import { Search } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { createClient } from '@/utils/supabase/client'
 import {
   Dialog,
   DialogContent,
@@ -24,43 +24,66 @@ import {
 
 interface Player {
   id: string
-  name: string
-  cardNumber: string
-  age: number
-  language: string
-  typicalGames: string[]
-  points: number
+  name: string | null
+  email: string | null
+  phone_number: string | null
+  company_id: string | null
+  dob: string | null
 }
-
-const mockPlayers: Player[] = [
-  { id: '1', name: 'John Doe', cardNumber: '123456', age: 35, language: 'English', typicalGames: ['Blackjack', 'Poker'], points: 1000 },
-  { id: '2', name: 'Jane Smith', cardNumber: '234567', age: 42, language: 'Spanish', typicalGames: ['Roulette', 'Slots'], points: 1500 },
-  { id: '3', name: 'Bob Johnson', cardNumber: '345678', age: 28, language: 'English', typicalGames: ['Poker', 'Craps'], points: 750 },
-  { id: '4', name: 'Alice Brown', cardNumber: '456789', age: 55, language: 'French', typicalGames: ['Baccarat', 'Blackjack'], points: 2000 },
-]
-
-const languages = ['English', 'Spanish', 'French', 'Mandarin', 'Japanese']
-const games = ['Blackjack', 'Poker', 'Roulette', 'Slots', 'Craps', 'Baccarat']
 
 export function PlayerSearchModal() {
   const [searchTerm, setSearchTerm] = useState('')
   const [minAge, setMinAge] = useState('')
   const [maxAge, setMaxAge] = useState('')
-  const [language, setLanguage] = useState('')
-  const [game, setGame] = useState('')
   const [searchResults, setSearchResults] = useState<Player[]>([])
 
-  const handleSearch = () => {
-    // Mock API call - replace with actual API call in production
-    const results = mockPlayers.filter(player => 
-      (player.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-       player.cardNumber.includes(searchTerm)) &&
-      (!minAge || player.age >= parseInt(minAge)) &&
-      (!maxAge || player.age <= parseInt(maxAge)) &&
-      (!language || player.language === language) &&
-      (!game || player.typicalGames.includes(game))
-    )
-    setSearchResults(results)
+  const handleSearch = async () => {
+    const supabase = createClient()
+    
+    // Calculate date ranges based on age inputs
+    const now = new Date()
+    const maxDate = minAge ? 
+      new Date(now.getFullYear() - parseInt(minAge), now.getMonth(), now.getDate()) : null
+    const minDate = maxAge ? 
+      new Date(now.getFullYear() - parseInt(maxAge), now.getMonth(), now.getDate()) : null
+
+    let query = supabase
+      .from('player')
+      .select('*')
+      
+    // Add name search if provided
+    if (searchTerm) {
+      query = query.ilike('name', `%${searchTerm}%`)
+    }
+    
+    // Add age range filters if provided
+    if (maxDate) {
+      query = query.lte('dob', maxDate.toISOString().split('T')[0])
+    }
+    if (minDate) {
+      query = query.gte('dob', minDate.toISOString().split('T')[0])
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error('Error fetching players:', error)
+      return
+    }
+
+    setSearchResults(data || [])
+  }
+
+  const calculateAge = (dob: string | null) => {
+    if (!dob) return 'N/A'
+    const birthDate = new Date(dob)
+    const today = new Date()
+    let age = today.getFullYear() - birthDate.getFullYear()
+    const monthDiff = today.getMonth() - birthDate.getMonth()
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--
+    }
+    return age
   }
 
   return (
@@ -75,11 +98,11 @@ export function PlayerSearchModal() {
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="name" className="text-right">
-              Name/Card
+              Name
             </Label>
             <Input
               id="name"
-              placeholder="Search by name or card number"
+              placeholder="Search by name"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="col-span-3"
@@ -104,40 +127,6 @@ export function PlayerSearchModal() {
               className="col-span-1"
             />
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="language" className="text-right">
-              Language
-            </Label>
-            <Select value={language} onValueChange={setLanguage}>
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select a language" />
-              </SelectTrigger>
-              <SelectContent>
-                {languages.map((lang) => (
-                  <SelectItem key={lang} value={lang}>
-                    {lang}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="game" className="text-right">
-              Typical Game
-            </Label>
-            <Select value={game} onValueChange={setGame}>
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select a game" />
-              </SelectTrigger>
-              <SelectContent>
-                {games.map((g) => (
-                  <SelectItem key={g} value={g}>
-                    {g}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
         </div>
         <Button onClick={handleSearch} className="w-full">
           <Search className="h-4 w-4 mr-2" />
@@ -148,23 +137,19 @@ export function PlayerSearchModal() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Card Number</TableHead>
                 <TableHead>Age</TableHead>
-                <TableHead>Language</TableHead>
-                <TableHead>Typical Games</TableHead>
-                <TableHead>Points</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Phone</TableHead>
                 <TableHead>Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {searchResults.map((player) => (
                 <TableRow key={player.id}>
-                  <TableCell>{player.name}</TableCell>
-                  <TableCell>{player.cardNumber}</TableCell>
-                  <TableCell>{player.age}</TableCell>
-                  <TableCell>{player.language}</TableCell>
-                  <TableCell>{player.typicalGames.join(', ')}</TableCell>
-                  <TableCell>{player.points}</TableCell>
+                  <TableCell>{player.name || 'N/A'}</TableCell>
+                  <TableCell>{calculateAge(player.dob)}</TableCell>
+                  <TableCell>{player.email || 'N/A'}</TableCell>
+                  <TableCell>{player.phone_number || 'N/A'}</TableCell>
                   <TableCell>
                     <Button variant="outline" size="sm">Select</Button>
                   </TableCell>
