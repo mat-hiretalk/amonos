@@ -18,11 +18,12 @@ export interface TableData {
   status: "active" | "inactive"
   hasVIP: boolean
   ratingSlips: RatingSlip[]
+  occupiedSeats: {[seatNumber: number]: RatingSlip}
 }
 
 interface CasinoTableProps {
   table: TableData
-  onUpdateTable: (updatedTable: TableData, playerId: string) => void
+  onUpdateTable: (updatedTable: TableData, playerId: string, seatNumber: number) => void
   selectedCasino: string | null
 }
 
@@ -45,7 +46,7 @@ export function CasinoTable({ table, onUpdateTable, selectedCasino }: CasinoTabl
       status: "active"
     }
     
-    onUpdateTable(updatedTable, player.id)
+    onUpdateTable(updatedTable, player.id, selectedSeat)
     setSelectedSeat(null)
   }
 
@@ -99,14 +100,18 @@ export function CasinoTable({ table, onUpdateTable, selectedCasino }: CasinoTabl
         )}
 
         <div className="grid grid-cols-3 gap-2">
-          {table.seats.map((player, index) => (
-            <TableSeat
-              key={index}
-              seatNumber={index + 1}
-              player={player}
-              onSeatPlayer={handleSeatPlayer}
-            />
-          ))}
+          {table.seats.map((player, index) => {
+            const seatNumber = index + 1
+            return (
+              <TableSeat
+                key={index}
+                seatNumber={seatNumber}
+                player={player}
+                occupiedBy={table.occupiedSeats[seatNumber]}
+                onSeatPlayer={handleSeatPlayer}
+              />
+            )
+          })}
         </div>
       </CardContent>
 
@@ -117,7 +122,7 @@ export function CasinoTable({ table, onUpdateTable, selectedCasino }: CasinoTabl
           </DialogHeader>
           <div className="py-4">
             <PlayerSearchModal 
-              selectedCasino={selectedCasino} 
+              selectedCasino={selectedCasino ?? ''} 
               mode="seat"
               onPlayerSelected={handlePlayerSelected}
             />

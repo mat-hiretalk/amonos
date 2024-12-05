@@ -164,7 +164,14 @@ export default function PitStation() {
             </div>
           </div>
           <div className="flex items-center gap-2 p-4">
-            <PlayerSearchModal selectedCasino={selectedCasino} />
+            <PlayerSearchModal 
+              selectedCasino={selectedCasino} 
+              mode="visit"
+              onPlayerSelected={(player) => {
+                // Handle player selection for visit mode
+                console.log('Selected player:', player)
+              }}
+            />
           </div>
         </header>
 

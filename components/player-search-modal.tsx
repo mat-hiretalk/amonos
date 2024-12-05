@@ -5,19 +5,13 @@ import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/utils/supabase/client"
+import { Database } from '@/database.types'
 
-interface Player {
-  id: string
-  name: string | null
-  email: string | null
-  phone_number: string | null
-  company_id: string | null
-  dob: string | null
-}
+type Player = Database['public']['Tables']['player']['Row']
 
 interface PlayerSearchModalProps {
   selectedCasino: string
-  mode: "seat" | "other"  // Allows for different modal behaviors
+  mode: "seat" | "visit"
   onPlayerSelected: (player: Player) => void
 }
 

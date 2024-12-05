@@ -1,23 +1,31 @@
 import { Button } from "@/components/ui/button"
 import { Database } from "@/database.types"
-import { User, UserPlus } from 'lucide-react'
+import { User, UserPlus, DollarSign } from 'lucide-react'
 
 type Player = Database['public']['Tables']['player']['Row']
+type RatingSlip = Database['public']['Tables']['ratingslip']['Row']
 
 interface SeatProps {
   seatNumber: number
   player: Player | null
+  occupiedBy?: RatingSlip
   onSeatPlayer: (seatNumber: number) => void
 }
 
-export function TableSeat({ seatNumber, player, onSeatPlayer }: SeatProps) {
-  if (player) {
+export function TableSeat({ seatNumber, player, occupiedBy, onSeatPlayer }: SeatProps) {
+  if (occupiedBy) {
     return (
-      <div className="flex items-center space-x-2 p-2 bg-secondary rounded-md">
-        <User className="h-4 w-4" />
-        <div className="text-sm">
-          <p className="font-medium">{player.name}</p>
-          <p className="text-muted-foreground text-xs">{player.email}</p>
+      <div className="flex items-center justify-between p-2 bg-secondary rounded-md">
+        <div className="flex items-center space-x-2">
+          <User className="h-4 w-4" />
+          <div className="text-sm">
+            <p className="font-medium">Seat {seatNumber}</p>
+            <p className="text-muted-foreground text-xs">Active Player</p>
+          </div>
+        </div>
+        <div className="flex items-center space-x-1">
+          <DollarSign className="h-4 w-4" />
+          <span className="text-sm font-medium">${occupiedBy.average_bet}</span>
         </div>
       </div>
     )

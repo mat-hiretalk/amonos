@@ -7,6 +7,7 @@ import { Database } from '@/database.types'
 
 type GamingTable = Database['public']['Views']['activetablesandsettings']['Row']
 type RatingSlip = Database['public']['Tables']['ratingslip']['Row']
+type Player = Database['public']['Tables']['player']['Row']
 
 export function CasinoFloorView() {
   const [tables, setTables] = useState<GamingTable[]>([])
@@ -73,8 +74,7 @@ export function CasinoFloorView() {
     }
   }, [])
 
-  const handleUpdateTable = async (updatedTable: TableData, playerId: string) => {
-    // Create a new rating slip when seating a player
+  const handleUpdateTable = async (updatedTable: TableData, playerId: string, seatNumber: number) => {
     const { data: visitData, error: visitError } = await supabase
       .from('visit')
       .select('id')
@@ -86,16 +86,16 @@ export function CasinoFloorView() {
       console.error('Error finding active visit:', visitError)
       return
     }
-    console.log("visitData", updatedTable)
-    // Create rating slip
+
     const { error: ratingError } = await supabase
       .from('ratingslip')
       .insert({
-        gaming_table_id: updatedTable.id, // Assuming table.id is in format "tableName - settingsName"
+        gaming_table_id: updatedTable.id,
         visit_id: visitData.id,
         start_time: new Date().toISOString(),
         average_bet: 0,
-        game_settings: {} // You might want to pass the actual game settings here
+        seat_number: seatNumber,
+        game_settings: {}
       })
 
     if (ratingError) {
@@ -116,11 +116,17 @@ export function CasinoFloorView() {
             table={{
               name: `${table.table_name ?? ''} - ${table.settings_name ?? ''}`,
               id: table.gaming_table_id ?? '',
-              seats: Array(table.seats_available).fill(null).map(() => null),
+              seats: Array.from({ length: Number(table.seats_available ?? 0) }, () => null) as (Player | null)[],
               averageBet: tableRatingSlips.reduce((sum, slip) => sum + slip.average_bet, 0) / (tableRatingSlips.length || 1),
               status: "active",
               hasVIP: false,
-              ratingSlips: tableRatingSlips
+              ratingSlips: tableRatingSlips,
+              occupiedSeats: tableRatingSlips.reduce((acc, slip) => {
+                if (slip.seat_number) {
+                  acc[slip.seat_number] = slip
+                }
+                return acc
+              }, {} as {[key: number]: RatingSlip})
             }} 
             selectedCasino={table.casino_id}
             onUpdateTable={handleUpdateTable} 
