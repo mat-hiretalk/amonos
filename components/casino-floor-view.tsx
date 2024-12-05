@@ -104,33 +104,35 @@ export function CasinoFloorView() {
   }
 
   return (
-    <div className="p-8 flex flex-wrap justify-center gap-4">
+    <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-[2048px] mx-auto">
       {tables.map((table) => {
         const tableRatingSlips = ratingSlips.filter(
           slip => slip.gaming_table_id === table.gaming_table_id
         )
         
         return (
-          <CasinoTable 
-            key={table.gaming_table_id} 
-            table={{
-              name: `${table.table_name ?? ''} - ${table.settings_name ?? ''}`,
-              id: table.gaming_table_id ?? '',
-              seats: Array.from({ length: Number(table.seats_available ?? 0) }, () => null) as (Player | null)[],
-              averageBet: tableRatingSlips.reduce((sum, slip) => sum + slip.average_bet, 0) / (tableRatingSlips.length || 1),
-              status: "active",
-              hasVIP: false,
-              ratingSlips: tableRatingSlips,
-              occupiedSeats: tableRatingSlips.reduce((acc, slip) => {
-                if (slip.seat_number) {
-                  acc[slip.seat_number] = slip
-                }
-                return acc
-              }, {} as {[key: number]: RatingSlip})
-            }} 
-            selectedCasino={table.casino_id}
-            onUpdateTable={handleUpdateTable} 
-          />
+          <div key={table.gaming_table_id} className="w-full">
+            <CasinoTable 
+              key={table.gaming_table_id} 
+              table={{
+                name: `${table.table_name ?? ''} - ${table.settings_name ?? ''}`,
+                id: table.gaming_table_id ?? '',
+                seats: Array.from({ length: Number(table.seats_available ?? 0) }, () => null) as (Player | null)[],
+                averageBet: tableRatingSlips.reduce((sum, slip) => sum + slip.average_bet, 0) / (tableRatingSlips.length || 1),
+                status: "active",
+                hasVIP: false,
+                ratingSlips: tableRatingSlips,
+                occupiedSeats: tableRatingSlips.reduce((acc, slip) => {
+                  if (slip.seat_number) {
+                    acc[slip.seat_number] = slip
+                  }
+                  return acc
+                }, {} as {[key: number]: RatingSlip})
+              }} 
+              selectedCasino={table.casino_id}
+              onUpdateTable={handleUpdateTable} 
+            />
+          </div>
         )
       })}
     </div>

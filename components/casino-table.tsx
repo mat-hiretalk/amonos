@@ -59,9 +59,9 @@ export function CasinoTable({ table, onUpdateTable, selectedCasino }: CasinoTabl
 
   return (
     <Card className={table.status === "active" ? "border-green-500" : "border-red-500"}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardHeader className="flex flex-row items-center justify-between  pb-2">
         <CardTitle className="text-lg font-medium">{table.name}</CardTitle>
-        {table.hasVIP && <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />}
+        {table.hasVIP && <Star className=" fill-yellow-400 text-yellow-400" />}
       </CardHeader>
       <CardContent>
         <div className="flex justify-between items-center mb-4">
@@ -78,26 +78,6 @@ export function CasinoTable({ table, onUpdateTable, selectedCasino }: CasinoTabl
           </Badge>
         </div>
 
-        {/* Active Rating Slips */}
-        {table.ratingSlips.length > 0 && (
-          <div className="mb-4">
-            <h3 className="text-sm font-medium mb-2">Active Players</h3>
-            <div className="space-y-2">
-              {table.ratingSlips.map((slip) => (
-                <div key={slip.id} className="flex items-center justify-between bg-secondary/50 p-2 rounded-md">
-                  <div className="flex items-center space-x-2">
-                    <Users className="h-4 w-4" />
-                    <span className="text-sm font-medium">${slip.average_bet}</span>
-                  </div>
-                  <div className="flex items-center space-x-1 text-muted-foreground">
-                    <Clock className="h-3 w-3" />
-                    <span className="text-xs">{getElapsedTime(slip.start_time)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         <div className="grid grid-cols-3 gap-2">
           {table.seats.map((player, index) => {
