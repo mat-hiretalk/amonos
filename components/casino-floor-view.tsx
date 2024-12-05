@@ -11,6 +11,7 @@ interface GamingTable {
   casino_id: string
   game_settings_id: string
   settings_name: string
+  seats_available: number
   version: string
   house_edge: number
   average_rounds_per_hour: number
@@ -73,7 +74,7 @@ export function CasinoFloorView() {
           key={table.gaming_table_id} 
           table={{
             id: `${table.table_name} - ${table.settings_name}`,
-            seats: new Array(6).fill(null), // Initialize with 6 empty seats
+            seats: new Array(table.seats_available).fill(null), // Initialize with 6 empty seats
             averageBet: 0, // This would need to come from a different table/view
             status: "active",
             hasVIP: false // This would need to come from a different table/view
