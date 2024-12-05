@@ -169,36 +169,48 @@ export default function PitStation() {
         </header>
 
         <div className="flex-1 p-4 overflow-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Player</TableHead>
-                <TableHead>Check In Time</TableHead>
-                <TableHead>Duration</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {activeVisits.map((visit) => {
-                const duration = new Date().getTime() - new Date(visit.check_in_date).getTime()
-                const hours = Math.floor(duration / (1000 * 60 * 60))
-                const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60))
-                
-                return (
-                  <TableRow key={visit.id}>
-                    <TableCell className="font-medium">{visit.player.name || 'Unknown'}</TableCell>
-                    <TableCell>{new Date(visit.check_in_date).toLocaleTimeString()}</TableCell>
-                    <TableCell>{`${hours}:${minutes.toString().padStart(2, '0')}`}</TableCell>
-                    <TableCell>
-                      <Button variant="outline" size="sm">View Details</Button>
-                    </TableCell>
+          <Tabs defaultValue="floor" className="w-full">
+            <TabsList className="mb-4">
+              <TabsTrigger value="floor">Casino Floor</TabsTrigger>
+              <TabsTrigger value="visitors">Visitor View</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="visitors">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Player</TableHead>
+                    <TableHead>Check In Time</TableHead>
+                    <TableHead>Duration</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
+                </TableHeader>
+                <TableBody>
+                  {activeVisits.map((visit) => {
+                    const duration = new Date().getTime() - new Date(visit.check_in_date).getTime()
+                    const hours = Math.floor(duration / (1000 * 60 * 60))
+                    const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60))
+                    
+                    return (
+                      <TableRow key={visit.id}>
+                        <TableCell className="font-medium">{visit.player.name || 'Unknown'}</TableCell>
+                        <TableCell>{new Date(visit.check_in_date).toLocaleTimeString()}</TableCell>
+                        <TableCell>{`${hours}:${minutes.toString().padStart(2, '0')}`}</TableCell>
+                        <TableCell>
+                          <Button variant="outline" size="sm">View Details</Button>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </TabsContent>
+
+            <TabsContent value="floor">
+              <CasinoFloorView />
+            </TabsContent>
+          </Tabs>
         </div>
-        <CasinoFloorView />
       </div>
 
       {/* Right Sidebar - Player Details */}
