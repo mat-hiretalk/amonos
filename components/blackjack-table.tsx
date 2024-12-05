@@ -11,12 +11,12 @@ interface Player {
 
 interface BlackjackTableProps {
   id: string
-  number: number
+  name: string
   players: Player[]
   onSelectPlayer: (player: Player) => void
 }
 
-export function BlackjackTable({ id, number, players, onSelectPlayer }: BlackjackTableProps) {
+export function BlackjackTable({ id, name, players, onSelectPlayer }: BlackjackTableProps) {
   const renderSeat = (seatNumber: number) => {
     const player = players.find(p => p.tableId === id && p.seatNumber === seatNumber)
     return (
@@ -56,7 +56,7 @@ export function BlackjackTable({ id, number, players, onSelectPlayer }: Blackjac
         </div>
         {/* Table number */}
         <div className="absolute -top-6 md:-top-8 left-1/2 transform -translate-x-1/2 bg-zinc-800 text-white px-2 md:px-3 py-1 rounded-md text-xs md:text-sm">
-          Table {number}
+           {name}
         </div>
       </div>
     </div>
