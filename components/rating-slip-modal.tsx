@@ -56,6 +56,33 @@ export function RatingSlipModal({ ratingSlip, isOpen, onClose }: RatingSlipModal
     }
   }
 
+  const handleStartTimeChange = (operation: 'add' | 'subtract', minutes: number) => {
+    const [datePart, timePart] = startTime.split('T')
+    const [hours, mins] = timePart.split(':').map(Number)
+    
+    const currentDate = new Date(
+      parseInt(datePart.split('-')[0]),
+      parseInt(datePart.split('-')[1]) - 1,
+      parseInt(datePart.split('-')[2]),
+      hours,
+      mins
+    )
+
+    if (operation === 'add') {
+      currentDate.setMinutes(currentDate.getMinutes() + minutes)
+    } else {
+      currentDate.setMinutes(currentDate.getMinutes() - minutes)
+    }
+
+    const newDateTime = `${currentDate.getFullYear()}-${
+      String(currentDate.getMonth() + 1).padStart(2, '0')}-${
+      String(currentDate.getDate()).padStart(2, '0')}T${
+      String(currentDate.getHours()).padStart(2, '0')}:${
+      String(currentDate.getMinutes()).padStart(2, '0')}`
+
+    setStartTime(newDateTime)
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
@@ -114,12 +141,30 @@ export function RatingSlipModal({ ratingSlip, isOpen, onClose }: RatingSlipModal
           </div>
           <div>
             <label className="text-sm font-medium">Start Time</label>
-            <Input
-              type="datetime-local"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              className="h-12 text-lg"
-            />
+            <div className="flex items-center space-x-2 mt-1">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-12 w-12 p-0"
+                onClick={() => handleStartTimeChange('subtract', 15)}
+              >
+                <Minus className="h-6 w-6" />
+              </Button>
+              <Input
+                type="datetime-local"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="h-12 text-lg text-center"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                className="h-12 w-12 p-0"
+                onClick={() => handleStartTimeChange('add', 15)}
+              >
+                <Plus className="h-6 w-6" />
+              </Button>
+            </div>
           </div>
           <div>
             <label className="text-sm font-medium">Seats</label>
