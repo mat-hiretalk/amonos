@@ -8,8 +8,8 @@ import { PlayerSearchModal } from "./player-search-modal"
 import { Database } from '@/database.types'
 
 type RatingSlip = Database['public']['Tables']['ratingslip']['Row'] & {
-  visit: {
-    player: {
+  visit?: {
+    player?: {
       name: string
     }
   }

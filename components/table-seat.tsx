@@ -4,8 +4,8 @@ import { User, UserPlus, DollarSign } from 'lucide-react'
 
 type Player = Database['public']['Tables']['player']['Row']
 type RatingSlip = Database['public']['Tables']['ratingslip']['Row'] & {
-  visit: {
-    player: {
+  visit?: {
+    player?: {
       name: string
     }
   }
