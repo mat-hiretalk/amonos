@@ -27,6 +27,27 @@ export function RatingSlipModal({ ratingSlip, isOpen, onClose }: RatingSlipModal
   const [seatNumber, setSeatNumber] = useState(ratingSlip.seat_number?.toString() || "")
   const supabase = createClient()
 
+  const initialCashIn = Number(ratingSlip.cash_in) || 0
+  const initialStartTime = ratingSlip.start_time || ""
+  const initialAverageBet = Number(ratingSlip.average_bet) || 0
+
+  const getTotalCashInChange = () => {
+    const currentCashIn = Number(cashIn) || 0
+    return currentCashIn - initialCashIn
+  }
+
+  const getTotalTimeChange = () => {
+    if (!startTime || !initialStartTime) return 0
+    const current = new Date(startTime)
+    const initial = new Date(initialStartTime)
+    return Math.round((current.getTime() - initial.getTime()) / (1000 * 60)) // Convert to minutes
+  }
+
+  const getTotalAverageBetChange = () => {
+    const currentAverageBet = Number(averageBet) || 0
+    return currentAverageBet - initialAverageBet
+  }
+
   const handleSave = async () => {
     const { error } = await supabase
       .from('ratingslip')
@@ -48,12 +69,13 @@ export function RatingSlipModal({ ratingSlip, isOpen, onClose }: RatingSlipModal
 
   const handleCashInChange = (operation: 'add' | 'subtract', amount: number) => {
     const currentValue = Number(cashIn) || 0
+    let newValue
     if (operation === 'add') {
-      setCashIn((currentValue + amount).toString())
+      newValue = currentValue + amount
     } else {
-      const newValue = Math.max(0, currentValue - amount)
-      setCashIn(newValue.toString())
+      newValue = Math.max(0, currentValue - amount)
     }
+    setCashIn(newValue.toString())
   }
 
   const handleStartTimeChange = (operation: 'add' | 'subtract', minutes: number) => {
@@ -91,16 +113,70 @@ export function RatingSlipModal({ ratingSlip, isOpen, onClose }: RatingSlipModal
         </DialogHeader>
         <div className="space-y-6">
           <div>
-            <label className="text-sm font-medium">Average Bet</label>
-            <Input
-              type="number"
-              value={averageBet}
-              onChange={(e) => setAverageBet(e.target.value)}
-              className="h-12 text-lg"
-            />
+            <div className="flex justify-between items-center">
+              <label className="text-sm font-medium">Average Bet</label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setAverageBet(initialAverageBet.toString())}
+              >
+                Reset
+              </Button>
+            </div>
+            <div className="flex items-center space-x-2 mt-1">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-12 w-12 p-0"
+                onClick={() => setAverageBet((prev) => Math.max(0, Number(prev) - 1).toString())}
+              >
+                <Minus className="h-6 w-6" />
+              </Button>
+              <Input
+                type="number"
+                value={averageBet}
+                onChange={(e) => setAverageBet(e.target.value)}
+                className="h-12 text-lg text-center"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                className="h-12 w-12 p-0"
+                onClick={() => setAverageBet((prev) => (Number(prev) + 1).toString())}
+              >
+                <Plus className="h-6 w-6" />
+              </Button>
+            </div>
+            <div className="text-sm mt-1">
+              Total Change: {getTotalAverageBetChange() > 0 ? '+' : ''}{getTotalAverageBetChange()}
+            </div>
+            <div className="grid grid-cols-5 gap-2 mt-2">
+              {[5, 25, 100, 500, 1000].map((amount) => (
+                <Button
+                  key={amount}
+                  type="button"
+                  variant="outline"
+                  className="h-12 text-lg"
+                  onClick={() => setAverageBet((prev) => (Number(prev) + amount).toString())}
+                >
+                  +{amount}
+                </Button>
+              ))}
+            </div>
           </div>
           <div>
-            <label className="text-sm font-medium">Buy Ins</label>
+            <div className="flex justify-between items-center">
+              <label className="text-sm font-medium">Buy Ins</label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setCashIn(initialCashIn.toString())}
+              >
+                Reset
+              </Button>
+            </div>
             <div className="flex items-center space-x-2 mt-1">
               <Button
                 type="button"
@@ -124,6 +200,9 @@ export function RatingSlipModal({ ratingSlip, isOpen, onClose }: RatingSlipModal
               >
                 <Plus className="h-6 w-6" />
               </Button>
+            </div>
+            <div className="text-sm mt-1">
+              Total Change: {getTotalCashInChange() > 0 ? '+' : ''}{getTotalCashInChange()}
             </div>
             <div className="grid grid-cols-5 gap-2 mt-2">
               {[1, 5, 20, 50, 100].map((amount) => (
@@ -164,6 +243,9 @@ export function RatingSlipModal({ ratingSlip, isOpen, onClose }: RatingSlipModal
               >
                 <Plus className="h-6 w-6" />
               </Button>
+            </div>
+            <div className="text-sm mt-1">
+              Total Change: {getTotalTimeChange() > 0 ? '+' : ''}{getTotalTimeChange()} minutes
             </div>
           </div>
           <div>
