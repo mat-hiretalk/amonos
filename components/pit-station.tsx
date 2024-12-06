@@ -61,6 +61,8 @@ export default function PitStation() {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null)
   const [selectedCasino, setSelectedCasino] = useState<string>('')
   const [activeVisits, setActiveVisits] = useState<Visit[]>([])
+  const [activeTab, setActiveTab] = useState('floor')
+  const [searchDialogOpen, setSearchDialogOpen] = useState(false)
   const supabase = createClient()
 
   // Fetch active visits when casino changes
@@ -172,7 +174,7 @@ export default function PitStation() {
             </div>
           </div>
           <div className="flex items-center gap-2 p-4">
-            <Dialog>
+            <Dialog open={searchDialogOpen} onOpenChange={setSearchDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
                   <Search className="h-4 w-4 mr-2" />
@@ -185,10 +187,16 @@ export default function PitStation() {
                 </DialogHeader>
                 <PlayerSearchModal 
                   selectedCasino={selectedCasino} 
-                  mode="visit"
-                  onPlayerSelected={(player) => {
-                    // Handle player selection for visit mode
-                    console.log('Selected player:', player)
+                  onPlayerSelected={(player, action, seatInfo) => {
+                    if (action === "visit") {
+                      // Handle visit action if needed
+                      console.log('Player visit:', player)
+                    } else if (action === "seat" && seatInfo) {
+                      // Handle seating the player
+                      setActiveTab('floor')
+                      // You might want to add additional logic here to update the floor view
+                    }
+                    setSearchDialogOpen(false)
                   }}
                 />
               </DialogContent>
@@ -198,7 +206,7 @@ export default function PitStation() {
         </header>
 
         <div className="flex-1 p-4 overflow-auto">
-          <Tabs defaultValue="floor" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="mb-4">
               <TabsTrigger value="floor">Casino Floor</TabsTrigger>
               <TabsTrigger value="visitors">Visitor View</TabsTrigger>

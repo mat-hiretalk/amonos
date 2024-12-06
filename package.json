@@ -3,6 +3,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "gt": "npx supabase gen types typescript --project-id 'bukobkhsvcunabjtifmr' --schema public > database.types.ts",
     "start": "next start"
   },
   "dependencies": {
