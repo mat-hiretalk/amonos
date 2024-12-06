@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from "react"
-
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/utils/supabase/client"
@@ -13,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
+// Types
 type Player = Database['public']['Tables']['player']['Row']
 type TableSeat = {
   table_id: string
@@ -26,6 +26,119 @@ interface PlayerSearchModalProps {
   preSelectedSeat?: TableSeat
 }
 
+// API Service
+const playerService = {
+  supabase: createClient(),
+
+  async searchPlayers(searchTerm: string): Promise<Player[]> {
+    const { data, error } = await this.supabase
+      .from('player')
+      .select('*')
+      .or(`name.ilike.%${searchTerm}%,phone_number.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`)
+      .limit(10)
+
+    if (error) throw new Error(`Error searching players: ${error.message}`)
+    return data || []
+  },
+
+  async createVisit(playerId: string, casinoId: string) {
+    const { data, error } = await this.supabase
+      .from('visit')
+      .insert([{
+        player_id: playerId,
+        casino_id: casinoId,
+        check_in_date: new Date().toISOString(),
+      }])
+      .select()
+
+    if (error) throw new Error(`Error creating visit: ${error.message}`)
+    return data[0]
+  },
+
+  async createRatingSlip(visitId: string, tableId: string, seatNumber: number) {
+    const { error } = await this.supabase
+      .from('ratingslip')
+      .insert([{
+        visit_id: visitId,
+        gaming_table_id: tableId,
+        seat_number: seatNumber,
+        start_time: new Date().toISOString(),
+        average_bet: 0,
+        game_settings: {}
+      }])
+
+    if (error) throw new Error(`Error creating rating slip: ${error.message}`)
+  },
+
+  async fetchAvailableSeats(): Promise<TableSeat[]> {
+    const { data: openSeats, error } = await this.supabase
+      .from('open_seats_by_table')
+      .select('gaming_table_id, table_name, open_seat_numbers, casino_id')
+
+    if (error) throw new Error(`Error fetching available seats: ${error.message}`)
+
+    return openSeats
+      .filter(table => table.gaming_table_id && table.table_name && table.open_seat_numbers)
+      .flatMap(table => {
+        const seatNumbers = table.open_seat_numbers!
+          .split(',')
+          .map(num => parseInt(num.trim()))
+        
+        return seatNumbers.map(seatNumber => ({
+          table_id: table.gaming_table_id!,
+          seat_number: seatNumber,
+          table_name: table.table_name!
+        }))
+      })
+  }
+}
+
+// Sub-components
+const PlayerCard = ({ player, isSelected, onClick }: { player: Player, isSelected: boolean, onClick: () => void }) => (
+  <div
+    className={`p-3 border rounded-lg cursor-pointer ${isSelected ? 'bg-gray-200' : ''}`}
+    onClick={onClick}
+  >
+    <div className="font-medium">{player.name}</div>
+    <div className="text-sm text-muted-foreground">
+      {player.phone_number} • {player.email}
+    </div>
+  </div>
+)
+
+const PlayerActions = ({ 
+  player,
+  preSelectedSeat,
+  onVisit,
+  onSeat,
+  onDeselect
+}: { 
+  player: Player,
+  preSelectedSeat?: TableSeat,
+  onVisit: () => void,
+  onSeat: () => void,
+  onDeselect: () => void
+}) => (
+  <div className="flex gap-2 mt-4">
+    <Button variant="outline" onClick={onVisit}>
+      Make Visitor
+    </Button>
+    {preSelectedSeat ? (
+      <Button onClick={onSeat}>
+        Seat at {preSelectedSeat.table_name} - Seat {preSelectedSeat.seat_number}
+      </Button>
+    ) : (
+      <Button onClick={onSeat}>
+        Select Seat
+      </Button>
+    )}
+    <Button onClick={onDeselect}>
+      Deselect
+    </Button>
+  </div>
+)
+
+// Main component
 export function PlayerSearchModal({ selectedCasino, onPlayerSelected, preSelectedSeat }: PlayerSearchModalProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [searchResults, setSearchResults] = useState<Player[]>([])
@@ -33,133 +146,59 @@ export function PlayerSearchModal({ selectedCasino, onPlayerSelected, preSelecte
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null)
   const [showSeatSelector, setShowSeatSelector] = useState(false)
   const [availableSeats, setAvailableSeats] = useState<TableSeat[]>([])
-  const supabase = createClient();
+  const [error, setError] = useState<string | null>(null)
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) return
     
     setIsLoading(true)
-    const { data, error } = await supabase
-      .from('player')
-      .select('*')
-      .or(`name.ilike.%${searchTerm}%,phone_number.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`)
-      .limit(10)
-    setIsLoading(false)
+    setError(null)
     
-    if (error) {
-      console.error('Error searching players:', error)
-      return
+    try {
+      const results = await playerService.searchPlayers(searchTerm)
+      setSearchResults(results)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred while searching')
+      setSearchResults([])
+    } finally {
+      setIsLoading(false)
     }
-
-    setSearchResults(data || [])
-  }
-
-  const fetchAvailableSeats = async () => {
-    const { data: openSeats, error } = await supabase
-      .from('open_seats_by_table')
-      .select('gaming_table_id, table_name, open_seat_numbers, casino_id')
-      //.eq('casino_id', selectedCasino)
-
-    console.log('Raw open seats data:', openSeats)
-
-    if (error) {
-      console.error('Error fetching available seats:', error)
-      return
-    }
-
-    // Transform the data to match the TableSeat type
-    const availableSeatsArray: TableSeat[] = openSeats
-      .filter(table => {
-        return table.gaming_table_id && table.table_name && table.open_seat_numbers
-      })
-      .flatMap(table => {
-        const seatNumbers = table.open_seat_numbers!
-          .split(',')
-          .map(num => parseInt(num.trim()))
-        
-        console.log('Seat numbers for table:', table.table_name, seatNumbers)
-
-        return seatNumbers.map(seatNumber => ({
-          table_id: table.gaming_table_id!,
-          seat_number: seatNumber,
-          table_name: table.table_name!
-        }))
-      })
-    
-    console.log('Transformed seats array:', availableSeatsArray)
-    setAvailableSeats(availableSeatsArray)
   }
 
   const handleAction = async (player: Player, action: "visit" | "seat") => {
-    if (action === "seat") {
-      setSelectedPlayer(player)
-      await fetchAvailableSeats()
-      setShowSeatSelector(true)
-      return
+    setError(null)
+    
+    try {
+      if (action === "seat") {
+        setSelectedPlayer(player)
+        const seats = await playerService.fetchAvailableSeats()
+        setAvailableSeats(seats)
+        setShowSeatSelector(true)
+        return
+      }
+
+      await playerService.createVisit(player.id, selectedCasino)
+      onPlayerSelected(player, action)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
     }
-
-    // Handle visit action as before
-    const { error: visitError } = await supabase
-      .from('visit')
-      .insert([
-        {
-          player_id: player.id,
-          casino_id: selectedCasino,
-          check_in_date: new Date().toISOString(),
-        }
-      ])
-
-    if (visitError) {
-      console.error('Error creating visit:', visitError)
-      return
-    }
-
-    onPlayerSelected(player, action)
   }
 
   const handleSeatSelection = async (seat: TableSeat) => {
     if (!selectedPlayer) return
+    setError(null)
 
-    // Create visit first
-    const { data: visitData, error: visitError } = await supabase
-      .from('visit')
-      .insert([
-        {
-          player_id: selectedPlayer.id,
-          casino_id: selectedCasino,
-          check_in_date: new Date().toISOString(),
-        }
-      ])
-      .select()
-
-    if (visitError) {
-      console.error('Error creating visit:', visitError)
-      return
+    try {
+      const visit = await playerService.createVisit(selectedPlayer.id, selectedCasino)
+      await playerService.createRatingSlip(visit.id, seat.table_id, seat.seat_number)
+      
+      setShowSeatSelector(false)
+      onPlayerSelected(selectedPlayer, "seat", { table_id: seat.table_id, seat_number: seat.seat_number })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred while seating player')
     }
-
-    // Create rating slip
-    const { error: ratingError } = await supabase
-      .from('ratingslip')
-      .insert([
-        {
-          visit_id: visitData[0].id,
-          gaming_table_id: seat.table_id,
-          seat_number: seat.seat_number,
-          start_time: new Date().toISOString(),
-          average_bet: 0, // Required field, initialize with 0
-          game_settings: {} // Required field, initialize with empty object
-        }
-      ])
-
-    if (ratingError) {
-      console.error('Error creating rating slip:', ratingError)
-      return
-    }
-
-    setShowSeatSelector(false)
-    onPlayerSelected(selectedPlayer, "seat", { table_id: seat.table_id, seat_number: seat.seat_number })
   }
-  console.log("preSelectedSeat", preSelectedSeat)
+
   return (
     <div className="space-y-4 w-full">
       <div className="flex gap-2">
@@ -171,52 +210,33 @@ export function PlayerSearchModal({ selectedCasino, onPlayerSelected, preSelecte
           className="w-full"
         />
         <Button onClick={handleSearch} disabled={isLoading}>
-          Search
+          {isLoading ? 'Searching...' : 'Search'}
         </Button>
       </div>
 
+      {error && (
+        <div className="text-red-500 text-sm">{error}</div>
+      )}
+
       <div className="space-y-2">
         {searchResults.map((player) => (
-          <div
+          <PlayerCard
             key={player.id}
-            className={`p-3 border rounded-lg ${selectedPlayer?.id === player.id ? 'bg-gray-200' : ''}`}
+            player={player}
+            isSelected={selectedPlayer?.id === player.id}
             onClick={() => setSelectedPlayer(player)}
-          >
-            <div className="font-medium">{player.name}</div>
-            <div className="text-sm text-muted-foreground">
-              {player.phone_number} • {player.email}
-            </div>
-          </div>
+          />
         ))}
       </div>
 
       {selectedPlayer && (
-        <div className="flex gap-2 mt-4">
-          <Button 
-            variant="outline"
-            onClick={() => handleAction(selectedPlayer, "visit")}
-          >
-            Make Visitor
-          </Button>
-          {preSelectedSeat ? (
-            <Button
-              onClick={() => handleSeatSelection(preSelectedSeat)}
-            >
-              Seat at {preSelectedSeat.table_name} - Seat {preSelectedSeat.seat_number}
-            </Button>
-          ) : (
-            <Button
-              onClick={() => handleAction(selectedPlayer, "seat")}
-            >
-              Select Seat
-            </Button>
-          )}
-          <Button
-            onClick={() => setSelectedPlayer(null)}
-          >
-            Deselect
-          </Button>
-        </div>
+        <PlayerActions
+          player={selectedPlayer}
+          preSelectedSeat={preSelectedSeat}
+          onVisit={() => handleAction(selectedPlayer, "visit")}
+          onSeat={() => preSelectedSeat ? handleSeatSelection(preSelectedSeat) : handleAction(selectedPlayer, "seat")}
+          onDeselect={() => setSelectedPlayer(null)}
+        />
       )}
 
       <Dialog open={showSeatSelector} onOpenChange={setShowSeatSelector}>
