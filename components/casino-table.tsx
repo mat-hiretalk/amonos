@@ -110,7 +110,7 @@ export function CasinoTable({ table, onUpdateTable, selectedCasino }: CasinoTabl
           <div className="py-4">
             <PlayerSearchModal 
               selectedCasino={selectedCasino ?? ''} 
-              mode="seat"
+              preSelectedSeat={selectedSeat ? { table_id: table.id, seat_number: selectedSeat, table_name: table.name } : undefined}
               onPlayerSelected={handlePlayerSelected}
             />
           </div>

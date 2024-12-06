@@ -33,6 +33,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { type TableSeat } from "./casino-floor-view"
 
 interface Player {
   id: string
@@ -63,6 +64,7 @@ export default function PitStation() {
   const [activeVisits, setActiveVisits] = useState<Visit[]>([])
   const [activeTab, setActiveTab] = useState('floor')
   const [searchDialogOpen, setSearchDialogOpen] = useState(false)
+  const [selectedSeat, setSelectedSeat] = useState<TableSeat | undefined>(undefined)
   const supabase = createClient()
 
   // Fetch active visits when casino changes
@@ -187,6 +189,7 @@ export default function PitStation() {
                 </DialogHeader>
                 <PlayerSearchModal 
                   selectedCasino={selectedCasino} 
+                  preSelectedSeat={selectedSeat}
                   onPlayerSelected={(player, action, seatInfo) => {
                     if (action === "visit") {
                       // Handle visit action if needed
@@ -194,6 +197,7 @@ export default function PitStation() {
                     } else if (action === "seat" && seatInfo) {
                       // Handle seating the player
                       setActiveTab('floor')
+                      setSelectedSeat(undefined)
                       // You might want to add additional logic here to update the floor view
                     }
                     setSearchDialogOpen(false)
@@ -244,7 +248,12 @@ export default function PitStation() {
             </TabsContent>
 
             <TabsContent value="floor">
-              <CasinoFloorView />
+              <CasinoFloorView 
+                onSeatSelect={(seat) => {
+                  setSelectedSeat(seat)
+                  setSearchDialogOpen(true)
+                }}
+              />
             </TabsContent>
           </Tabs>
         </div>

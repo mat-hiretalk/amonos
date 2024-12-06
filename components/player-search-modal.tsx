@@ -23,9 +23,10 @@ type TableSeat = {
 interface PlayerSearchModalProps {
   selectedCasino: string
   onPlayerSelected: (player: Player, action: "visit" | "seat", seatInfo?: { table_id: string, seat_number: number }) => void
+  preSelectedSeat?: TableSeat
 }
 
-export function PlayerSearchModal({ selectedCasino, onPlayerSelected }: PlayerSearchModalProps) {
+export function PlayerSearchModal({ selectedCasino, onPlayerSelected, preSelectedSeat }: PlayerSearchModalProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [searchResults, setSearchResults] = useState<Player[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -69,7 +70,6 @@ export function PlayerSearchModal({ selectedCasino, onPlayerSelected }: PlayerSe
     // Transform the data to match the TableSeat type
     const availableSeatsArray: TableSeat[] = openSeats
       .filter(table => {
-        console.log('Filtering table:', table)
         return table.gaming_table_id && table.table_name && table.open_seat_numbers
       })
       .flatMap(table => {
@@ -159,7 +159,7 @@ export function PlayerSearchModal({ selectedCasino, onPlayerSelected }: PlayerSe
     setShowSeatSelector(false)
     onPlayerSelected(selectedPlayer, "seat", { table_id: seat.table_id, seat_number: seat.seat_number })
   }
-
+  console.log("preSelectedSeat", preSelectedSeat)
   return (
     <div className="space-y-4 w-full">
       <div className="flex gap-2">
@@ -195,11 +195,19 @@ export function PlayerSearchModal({ selectedCasino, onPlayerSelected }: PlayerSe
                 >
                   Make Visitor
                 </Button>
-                <Button
-                  onClick={() => handleAction(player, "seat")}
-                >
-                  Select Seat
-                </Button>
+                {preSelectedSeat ? (
+                  <Button
+                    onClick={() => handleSeatSelection(preSelectedSeat)}
+                  >
+                    Seat at {preSelectedSeat.table_name} - Seat {preSelectedSeat.seat_number}
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => handleAction(player, "seat")}
+                  >
+                    Select Seat
+                  </Button>
+                )}
               </div>
             </div>
           </div>

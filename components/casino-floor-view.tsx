@@ -9,7 +9,17 @@ type GamingTable = Database['public']['Views']['activetablesandsettings']['Row']
 type RatingSlip = Database['public']['Tables']['ratingslip']['Row']
 type Player = Database['public']['Tables']['player']['Row']
 
-export function CasinoFloorView() {
+export type TableSeat = {
+  table_id: string
+  seat_number: number
+  table_name: string
+}
+
+interface CasinoFloorViewProps {
+  onSeatSelect: (seat: TableSeat) => void
+}
+
+export function CasinoFloorView({ onSeatSelect }: CasinoFloorViewProps): JSX.Element {
   const [tables, setTables] = useState<GamingTable[]>([])
   const [ratingSlips, setRatingSlips] = useState<RatingSlip[]>([])
   const supabase = createClient();
