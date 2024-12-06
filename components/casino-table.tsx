@@ -30,9 +30,10 @@ interface CasinoTableProps {
   table: TableData
   onUpdateTable: (updatedTable: TableData, playerId: string, seatNumber: number) => void
   selectedCasino: string | null
+  onMovePlayer: (ratingSlipId: string, newTableId: string, newSeatNumber: number) => void
 }
 
-export function CasinoTable({ table, onUpdateTable, selectedCasino }: CasinoTableProps) {
+export function CasinoTable({ table, onUpdateTable, selectedCasino, onMovePlayer }: CasinoTableProps) {
   const [selectedSeat, setSelectedSeat] = useState<number | null>(null)
 
   const handleSeatPlayer = (seatNumber: number) => {
@@ -53,6 +54,10 @@ export function CasinoTable({ table, onUpdateTable, selectedCasino }: CasinoTabl
     
     onUpdateTable(updatedTable, player.id, selectedSeat)
     setSelectedSeat(null)
+  }
+
+  const handleMovePlayer = (ratingSlipId: string, newSeatNumber: number) => {
+    onMovePlayer(ratingSlipId, table.id, newSeatNumber)
   }
 
   const getElapsedTime = (startTime: string) => {
@@ -96,6 +101,8 @@ export function CasinoTable({ table, onUpdateTable, selectedCasino }: CasinoTabl
                   return slip.seat_number === seatNumber
                 })}
                 onSeatPlayer={handleSeatPlayer}
+                onMovePlayer={handleMovePlayer}
+                tableId={table.id}
               />
             )
           })}
