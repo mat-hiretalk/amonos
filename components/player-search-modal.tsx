@@ -41,13 +41,14 @@ export function PlayerSearchModal({ selectedCasino, mode, onPlayerSelected }: Pl
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-1/4">
       <div className="flex gap-2">
         <Input
           placeholder="Search by name, phone, or email..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+          className="w-full"
         />
         <Button onClick={handleSearch} disabled={isLoading}>
           Search
