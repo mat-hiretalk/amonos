@@ -25,6 +25,14 @@ import { PlayerSearchModal } from "@/components/player-search-modal"
 import { CasinoSelector } from "@/components/casino-selector"
 import { createClient } from '@/utils/supabase/client'
 import { CasinoFloorView } from "./casino-floor-view"
+import { AddPlayerModal } from "@/components/add-player-modal"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 
 interface Player {
   id: string
@@ -164,14 +172,28 @@ export default function PitStation() {
             </div>
           </div>
           <div className="flex items-center gap-2 p-4">
-            <PlayerSearchModal 
-              selectedCasino={selectedCasino} 
-              mode="visit"
-              onPlayerSelected={(player) => {
-                // Handle player selection for visit mode
-                console.log('Selected player:', player)
-              }}
-            />
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button>
+                  <Search className="h-4 w-4 mr-2" />
+                  Search Players
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl">
+                <DialogHeader>
+                  <DialogTitle>Search Players</DialogTitle>
+                </DialogHeader>
+                <PlayerSearchModal 
+                  selectedCasino={selectedCasino} 
+                  mode="visit"
+                  onPlayerSelected={(player) => {
+                    // Handle player selection for visit mode
+                    console.log('Selected player:', player)
+                  }}
+                />
+              </DialogContent>
+            </Dialog>
+            {selectedCasino && <AddPlayerModal selectedCasino={selectedCasino} />}
           </div>
         </header>
 
