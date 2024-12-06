@@ -1,44 +1,50 @@
-'use client'
+"use client";
 
-import { useState } from "react"
+import { useState } from "react";
 
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { createClient } from "@/utils/supabase/client"
-import { Database } from '@/database.types'
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { createClient } from "@/utils/supabase/client";
+import { Database } from "@/database.types";
 
-type Player = Database['public']['Tables']['player']['Row']
+type Player = Database["public"]["Tables"]["player"]["Row"];
 
 interface PlayerSearchModalProps {
-  selectedCasino: string
-  mode: "seat" | "visit"
-  onPlayerSelected: (player: Player) => void
+  selectedCasino: string;
+  mode: "seat" | "visit";
+  onPlayerSelected: (player: Player) => void;
 }
 
-export function PlayerSearchModal({ selectedCasino, mode, onPlayerSelected }: PlayerSearchModalProps) {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [searchResults, setSearchResults] = useState<Player[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-   const supabase =  createClient();
+export function PlayerSearchModal({
+  selectedCasino,
+  mode,
+  onPlayerSelected,
+}: PlayerSearchModalProps) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState<Player[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const supabase = createClient();
 
   const handleSearch = async () => {
-    if (!searchTerm.trim()) return
-    
-    setIsLoading(true)
+    if (!searchTerm.trim()) return;
+
+    setIsLoading(true);
     const { data, error } = await supabase
-      .from('player')
-      .select('*')
-      .or(`name.ilike.%${searchTerm}%,phone_number.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`)
-      .limit(10)
-    setIsLoading(false)
-    
+      .from("player")
+      .select("*")
+      .or(
+        `name.ilike.%${searchTerm}%,phone_number.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`
+      )
+      .limit(10);
+    setIsLoading(false);
+
     if (error) {
-      console.error('Error searching players:', error)
-      return
+      console.error("Error searching players:", error);
+      return;
     }
 
-    setSearchResults(data || [])
-  }
+    setSearchResults(data || []);
+  };
 
   return (
     <div className="space-y-4 w-1/4">
@@ -47,8 +53,8 @@ export function PlayerSearchModal({ selectedCasino, mode, onPlayerSelected }: Pl
           placeholder="Search by name, phone, or email..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-          className="w-full"
+          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+          className="w-full border border-red-400"
         />
         <Button onClick={handleSearch} disabled={isLoading}>
           Search
@@ -70,6 +76,5 @@ export function PlayerSearchModal({ selectedCasino, mode, onPlayerSelected }: Pl
         ))}
       </div>
     </div>
-  )
+  );
 }
-
