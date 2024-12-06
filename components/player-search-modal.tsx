@@ -179,40 +179,45 @@ export function PlayerSearchModal({ selectedCasino, onPlayerSelected, preSelecte
         {searchResults.map((player) => (
           <div
             key={player.id}
-            className="p-3 border rounded-lg"
+            className={`p-3 border rounded-lg ${selectedPlayer?.id === player.id ? 'bg-gray-200' : ''}`}
+            onClick={() => setSelectedPlayer(player)}
           >
-            <div className="flex justify-between items-center">
-              <div>
-                <div className="font-medium">{player.name}</div>
-                <div className="text-sm text-muted-foreground">
-                  {player.phone_number} • {player.email}
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline"
-                  onClick={() => handleAction(player, "visit")}
-                >
-                  Make Visitor
-                </Button>
-                {preSelectedSeat ? (
-                  <Button
-                    onClick={() => handleSeatSelection(preSelectedSeat)}
-                  >
-                    Seat at {preSelectedSeat.table_name} - Seat {preSelectedSeat.seat_number}
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => handleAction(player, "seat")}
-                  >
-                    Select Seat
-                  </Button>
-                )}
-              </div>
+            <div className="font-medium">{player.name}</div>
+            <div className="text-sm text-muted-foreground">
+              {player.phone_number} • {player.email}
             </div>
           </div>
         ))}
       </div>
+
+      {selectedPlayer && (
+        <div className="flex gap-2 mt-4">
+          <Button 
+            variant="outline"
+            onClick={() => handleAction(selectedPlayer, "visit")}
+          >
+            Make Visitor
+          </Button>
+          {preSelectedSeat ? (
+            <Button
+              onClick={() => handleSeatSelection(preSelectedSeat)}
+            >
+              Seat at {preSelectedSeat.table_name} - Seat {preSelectedSeat.seat_number}
+            </Button>
+          ) : (
+            <Button
+              onClick={() => handleAction(selectedPlayer, "seat")}
+            >
+              Select Seat
+            </Button>
+          )}
+          <Button
+            onClick={() => setSelectedPlayer(null)}
+          >
+            Deselect
+          </Button>
+        </div>
+      )}
 
       <Dialog open={showSeatSelector} onOpenChange={setShowSeatSelector}>
         <DialogContent>
