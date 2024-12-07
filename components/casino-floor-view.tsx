@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/client'
 import { Database } from '@/database.types'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
+import { stopRating } from '@/app/actions/stop-rating'
 
 type GamingTable = Database['public']['Views']['activetablesandsettings']['Row']
 type RatingSlip = Database['public']['Tables']['ratingslip']['Row']
@@ -124,25 +125,10 @@ export function CasinoFloorView({ onSeatSelect }: CasinoFloorViewProps): JSX.Ele
 
   const handleMovePlayer = async (ratingSlipId: string, newTableId: string, newSeatNumber: number) => {
     // End the current rating slip
-    const { error: endSlipError } = await supabase
-      .from('ratingslip')
-      .update({ end_time: new Date().toISOString() })
-      .eq('id', ratingSlipId)
+    const stoppedRatingSlip = await stopRating(ratingSlipId)
 
-    if (endSlipError) {
-      console.error('Error ending rating slip:', endSlipError)
-      return
-    }
-
-    // Get the visit_id from the old rating slip
-    const { data: oldSlip, error: oldSlipError } = await supabase
-      .from('ratingslip')
-      .select('visit_id')
-      .eq('id', ratingSlipId)
-      .single()
-
-    if (oldSlipError || !oldSlip) {
-      console.error('Error fetching old rating slip:', oldSlipError)
+    if (!stoppedRatingSlip.oldSlip) {
+      console.error('Error stopping rating slip:', ratingSlipId)
       return
     }
 
@@ -151,7 +137,7 @@ export function CasinoFloorView({ onSeatSelect }: CasinoFloorViewProps): JSX.Ele
       .from('ratingslip')
       .insert({
         gaming_table_id: newTableId,
-        visit_id: oldSlip.visit_id,
+        visit_id: stoppedRatingSlip.oldSlip.visit_id,
         start_time: new Date().toISOString(),
         average_bet: 0,
         seat_number: newSeatNumber,

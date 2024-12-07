@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Database } from "@/database.types"
 import { createClient } from '@/utils/supabase/client'
 import { Plus, Minus } from "lucide-react"
+import { stopRating } from "@/app/actions/stop-rating"
 
 type RatingSlip = Database['public']['Tables']['ratingslip']['Row'] & {
   visit?: {
@@ -25,6 +26,7 @@ export function RatingSlipModal({ ratingSlip, isOpen, onClose }: RatingSlipModal
   const [startTime, setStartTime] = useState(ratingSlip.start_time || "")
   const [cashIn, setCashIn] = useState(ratingSlip.cash_in?.toString() || "0")
   const [seatNumber, setSeatNumber] = useState(ratingSlip.seat_number?.toString() || "")
+  const [isLoading, setIsLoading] = useState(false)
   const supabase = createClient()
 
   const initialCashIn = Number(ratingSlip.cash_in) || 0
@@ -65,6 +67,18 @@ export function RatingSlipModal({ ratingSlip, isOpen, onClose }: RatingSlipModal
     }
 
     onClose()
+  }
+
+  const handleStopRating = async () => {
+    try {
+      setIsLoading(true)
+      await stopRating(ratingSlip.id)
+      onClose()
+    } catch (error) {
+      console.error('Error stopping rating:', error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleCashInChange = (operation: 'add' | 'subtract', amount: number) => {
@@ -257,9 +271,19 @@ export function RatingSlipModal({ ratingSlip, isOpen, onClose }: RatingSlipModal
               className="h-12 text-lg"
             />
           </div>
-          <Button onClick={handleSave} className="h-12 text-lg">
-            Save Changes
-          </Button>
+          <div className="flex justify-between gap-2">
+            <Button onClick={handleSave} className="flex-1">
+              Save Changes
+            </Button>
+            <Button 
+              onClick={handleStopRating} 
+              variant="destructive"
+              disabled={isLoading}
+              className="flex-1"
+            >
+              Stop Rating
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
