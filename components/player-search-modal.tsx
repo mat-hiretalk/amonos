@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { startRating } from "@/app/actions/start-rating"
 
 // Types
 type Player = Database['public']['Tables']['player']['Row']
@@ -55,20 +56,6 @@ const playerService = {
     return data[0]
   },
 
-  async createRatingSlip(visitId: string, tableId: string, seatNumber: number) {
-    const { error } = await this.supabase
-      .from('ratingslip')
-      .insert([{
-        visit_id: visitId,
-        gaming_table_id: tableId,
-        seat_number: seatNumber,
-        start_time: new Date().toISOString(),
-        average_bet: 0,
-        game_settings: {}
-      }])
-
-    if (error) throw new Error(`Error creating rating slip: ${error.message}`)
-  },
 
   async fetchAvailableSeats(): Promise<TableSeat[]> {
     const { data: openSeats, error } = await this.supabase
@@ -190,7 +177,7 @@ export function PlayerSearchModal({ selectedCasino, onPlayerSelected, preSelecte
 
     try {
       const visit = await playerService.createVisit(selectedPlayer.id, selectedCasino)
-      await playerService.createRatingSlip(visit.id, seat.table_id, seat.seat_number)
+      await startRating(visit.id, seat.table_id, seat.seat_number)
       
       setShowSeatSelector(false)
       onPlayerSelected(selectedPlayer, "seat", { table_id: seat.table_id, seat_number: seat.seat_number })

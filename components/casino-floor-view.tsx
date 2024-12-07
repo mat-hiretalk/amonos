@@ -7,6 +7,7 @@ import { Database } from '@/database.types'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { stopRating } from '@/app/actions/stop-rating'
+import { startRating } from '@/app/actions/start-rating'
 
 type GamingTable = Database['public']['Views']['activetablesandsettings']['Row']
 type RatingSlip = Database['public']['Tables']['ratingslip']['Row']
@@ -127,25 +128,16 @@ export function CasinoFloorView({ onSeatSelect }: CasinoFloorViewProps): JSX.Ele
     // End the current rating slip
     const stoppedRatingSlip = await stopRating(ratingSlipId)
 
-    if (!stoppedRatingSlip.oldSlip) {
+    if (!stoppedRatingSlip.oldSlip || !stoppedRatingSlip.oldSlip.visit_id) {
       console.error('Error stopping rating slip:', ratingSlipId)
       return
     }
 
     // Create a new rating slip for the new position
-    const { error: newSlipError } = await supabase
-      .from('ratingslip')
-      .insert({
-        gaming_table_id: newTableId,
-        visit_id: stoppedRatingSlip.oldSlip.visit_id,
-        start_time: new Date().toISOString(),
-        average_bet: 0,
-        seat_number: newSeatNumber,
-        game_settings: {}
-      })
+    const newSlip = await startRating(stoppedRatingSlip.oldSlip.visit_id, newTableId, newSeatNumber, stoppedRatingSlip.oldSlip.average_bet, stoppedRatingSlip.oldSlip.game_settings)
 
-    if (newSlipError) {
-      console.error('Error creating new rating slip:', newSlipError)
+    if (!newSlip.ratingSlip) {
+      console.error('Error creating new rating slip:', stoppedRatingSlip.oldSlip)
     }
   }
 
