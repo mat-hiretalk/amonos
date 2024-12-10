@@ -14,38 +14,75 @@ export function CasinoFloorView() {
   const [ratingSlips, setRatingSlips] = useState<RatingSlip[]>([])
   const supabase = createClient();
 
+  const handleUpdateTable = async (updatedTable: TableData, playerId: string, seatNumber: number) => {
+    const currentTime = new Date().toISOString();
+
+    const { data: visitData, error: visitError } = await supabase
+      .from('visit')
+      .select('id')
+      .eq('player_id', playerId)
+      .is('check_out_date', null)
+      .single()
+
+    if (visitError) {
+      console.error('Error finding active visit:', visitError)
+      return
+    }
+
+    const { error: ratingError } = await supabase
+      .from('ratingslip')
+      .insert({
+        gaming_table_id: updatedTable.id,
+        visit_id: visitData.id,
+        start_time: currentTime,
+        average_bet: 0,
+        seat_number: seatNumber,
+        game_settings: {}
+      })
+
+    if (ratingError) {
+      console.error('Error creating rating slip:', ratingError)
+    }
+  }
+
+  const [isLoading, setIsLoading] = useState(true)
+
   useEffect(() => {
     async function fetchData() {
-      // Fetch tables
-      const { data: tableData, error: tableError } = await supabase
-        .from('activetablesandsettings')
-        .select('*')
-      
-      if (tableError) {
-        console.error('Error fetching tables:', tableError)
-        return
-      }
+      try {
+        // Fetch tables
+        const { data: tableData, error: tableError } = await supabase
+          .from('activetablesandsettings')
+          .select('*')
+        
+        if (tableError) {
+          console.error('Error fetching tables:', tableError)
+          return
+        }
 
-      // Fetch active rating slips (where end_time is null)
-      const { data: slipData, error: slipError } = await supabase
-        .from('ratingslip')
-        .select(`
-          *,
-          visit:visit_id (
-            player:player_id (
-              name
+        // Fetch active rating slips (where end_time is null)
+        const { data: slipData, error: slipError } = await supabase
+          .from('ratingslip')
+          .select(`
+            *,
+            visit:visit_id (
+              player:player_id (
+                name
+              )
             )
-          )
-        `)
-        .is('end_time', null)
-      console.log("slipData", slipData)
-      if (slipError) {
-        console.error('Error fetching rating slips:', slipError)
-        return
-      }
+          `)
+          .is('end_time', null)
 
-      if (tableData) setTables(tableData)
-      if (slipData) setRatingSlips(slipData)
+        if (slipError) {
+          console.error('Error fetching rating slips:', slipError)
+          return
+        }
+
+        if (tableData) setTables(tableData)
+        if (slipData) setRatingSlips(slipData)
+      } finally {
+        setIsLoading(false)
+      }
     }
 
     fetchData()
@@ -81,62 +118,41 @@ export function CasinoFloorView() {
     }
   }, [])
 
-  const handleUpdateTable = async (updatedTable: TableData, playerId: string, seatNumber: number) => {
-    const { data: visitData, error: visitError } = await supabase
-      .from('visit')
-      .select('id')
-      .eq('player_id', playerId)
-      .is('check_out_date', null)
-      .single()
-
-    if (visitError) {
-      console.error('Error finding active visit:', visitError)
-      return
-    }
-
-    const { error: ratingError } = await supabase
-      .from('ratingslip')
-      .insert({
-        gaming_table_id: updatedTable.id,
-        visit_id: visitData.id,
-        start_time: new Date().toISOString(),
-        average_bet: 0,
-        seat_number: seatNumber,
-        game_settings: {}
-      })
-
-    if (ratingError) {
-      console.error('Error creating rating slip:', ratingError)
-    }
-  }
-
   return (
-    <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-[2048px] mx-auto">
-      {tables.map((table) => {
-        const tableRatingSlips = ratingSlips.filter(
-          slip => slip.gaming_table_id === table.gaming_table_id
-        )
-        
-        return (
-          <div key={table.gaming_table_id} className="w-full">
-            <CasinoTable 
-              key={table.gaming_table_id} 
-              table={{
-                name: `${table.table_name ?? ''} - ${table.settings_name ?? ''}`,
-                id: table.gaming_table_id ?? '',
-                seats: Array.from({ length: Number(table.seats_available ?? 0) }, () => null) as (Player | null)[],
-                averageBet: tableRatingSlips.reduce((sum, slip) => sum + slip.average_bet, 0) / (tableRatingSlips.length || 1),
-                status: "active",
-                hasVIP: false,
-                ratingSlips: tableRatingSlips,
-              }} 
-              selectedCasino={table.casino_id}
-              onUpdateTable={handleUpdateTable} 
-            />
-          </div>
-        )
-      })}
-    </div>
+    <>
+      {isLoading ? (
+        <div className="p-8 flex justify-center items-center">
+          <div className="animate-pulse">Loading...</div>
+        </div>
+      ) : (
+        <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-[2048px] mx-auto">
+          {tables.map((table) => {
+            const tableRatingSlips = ratingSlips.filter(
+              slip => slip.gaming_table_id === table.gaming_table_id
+            )
+            
+            return (
+              <div key={table.gaming_table_id} className="w-full">
+                <CasinoTable 
+                  key={table.gaming_table_id} 
+                  table={{
+                    name: `${table.table_name ?? ''} - ${table.settings_name ?? ''}`,
+                    id: table.gaming_table_id ?? '',
+                    seats: Array.from({ length: Number(table.seats_available ?? 0) }, () => null) as (Player | null)[],
+                    averageBet: tableRatingSlips.reduce((sum, slip) => sum + slip.average_bet, 0) / (tableRatingSlips.length || 1),
+                    status: "active",
+                    hasVIP: false,
+                    ratingSlips: tableRatingSlips,
+                  }} 
+                  selectedCasino={table.casino_id}
+                  onUpdateTable={handleUpdateTable} 
+                />
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </>
   )
 }
 
