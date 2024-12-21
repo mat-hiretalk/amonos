@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model casino {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String
+  location     String
+  company_id   String?        @db.Uuid
+  company      company?       @relation(fields: [company_id], references: [id], onUpdate: NoAction)
+  gamingtable  gamingtable[]
+  playercasino playercasino[]
+  visit        visit[]
+}
+
+model company {
+  id     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name   String
+  casino casino[]
+  player player[]
+}
+
+model gamesettings {
+  id                      String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                    String
+  average_rounds_per_hour Int
+  house_edge              Decimal               @db.Decimal
+  point_multiplier        Decimal?              @db.Decimal
+  points_conversion_rate  Decimal?              @db.Decimal
+  seats_available         Int?
+  version                 Int
+  created_at              DateTime?             @default(now()) @db.Timestamp(6)
+  updated_at              DateTime?             @default(now()) @db.Timestamp(6)
+  gamingtablesettings     gamingtablesettings[]
+}
+
+model gamingtable {
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                String
+  description         String?
+  table_number        String
+  type                String
+  casino_id           String?               @db.Uuid
+  created_at          DateTime?             @default(now()) @db.Timestamp(6)
+  updated_at          DateTime?             @default(now()) @db.Timestamp(6)
+  casino              casino?               @relation(fields: [casino_id], references: [id], onUpdate: NoAction)
+  gamingtablesettings gamingtablesettings[]
+  ratingslip          ratingslip[]
+}
+
+model gamingtablesettings {
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  game_settings_id String?       @db.Uuid
+  gaming_table_id  String?       @db.Uuid
+  active_from      DateTime?     @db.Timestamp(6)
+  gamesettings     gamesettings? @relation(fields: [game_settings_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  gamingtable      gamingtable?  @relation(fields: [gaming_table_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model language {
+  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  group_name     String?
+  playerlanguage playerlanguage[]
+}
+
+model player {
+  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  email          String           @unique
+  phone_number   String?
+  dob            DateTime?        @db.Date
+  company_id     String?          @db.Uuid
+  company        company?         @relation(fields: [company_id], references: [id], onUpdate: NoAction)
+  playercasino   playercasino[]
+  playerlanguage playerlanguage[]
+  visit          visit[]
+}
+
+model playercasino {
+  player_id String @db.Uuid
+  casino_id String @db.Uuid
+  casino    casino @relation(fields: [casino_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  player    player @relation(fields: [player_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([player_id, casino_id])
+}
+
+model playerlanguage {
+  player_id   String   @db.Uuid
+  language_id String   @db.Uuid
+  language    language @relation(fields: [language_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  player      player   @relation(fields: [player_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([player_id, language_id])
+}
+
+model ratingslip {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  average_bet     Decimal      @db.Decimal
+  cash_in         Decimal?     @db.Decimal
+  chips_brought   Decimal?     @db.Decimal
+  chips_taken     Decimal?     @db.Decimal
+  seat_number     Int?
+  start_time      DateTime     @db.Timestamp(6)
+  end_time        DateTime?    @db.Timestamp(6)
+  game_settings   Json
+  gaming_table_id String?      @db.Uuid
+  visit_id        String?      @db.Uuid
+  gamingtable     gamingtable? @relation(fields: [gaming_table_id], references: [id], onUpdate: NoAction)
+  visit           visit?       @relation(fields: [visit_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model visit {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  player_id      String?      @db.Uuid
+  casino_id      String?      @db.Uuid
+  check_in_date  DateTime     @db.Timestamp(6)
+  check_out_date DateTime?    @db.Timestamp(6)
+  ratingslip     ratingslip[]
+  casino         casino?      @relation(fields: [casino_id], references: [id], onUpdate: NoAction)
+  player         player?      @relation(fields: [player_id], references: [id], onUpdate: NoAction)
+}
