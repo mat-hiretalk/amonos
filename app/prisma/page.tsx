@@ -10,6 +10,7 @@ export default async function Prisma(): Promise<JSX.Element> {
         {players?.map((player) => (
           <li key={player.id}>
             <strong>Name:</strong> {player.firstName} <br />
+            <strong>Email:</strong> {player.email} <br />
           </li>
         ))}
       </ul>
