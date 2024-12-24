@@ -72,7 +72,8 @@ model language {
 
 model player {
   id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name           String
+  firstName      String
+  lastName       String
   email          String           @unique
   phone_number   String?
   dob            DateTime?        @db.Date
