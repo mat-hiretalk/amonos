@@ -10,12 +10,12 @@ const getPlayers = (): Prisma.playerCreateInput[] => {
       lastName: "Doe",
     },
     {
-      firstName: "Jane Smith",
+      firstName: "Jane",
       email: "jane@example.com",
       lastName: "Smith",
     },
     {
-      firstName: "Mike Johnson",
+      firstName: "Mike",
       email: "mike@example.com",
       lastName: "Johnson",
     },
@@ -27,6 +27,14 @@ const seedPlayers = async () => {
     // Clear existing players
     await prisma.player.deleteMany();
     console.log("Deleted existing players");
+
+    prisma.player.findMany({
+      where: {
+        email:{
+          endsWith:'gmail.com'
+        }
+      }
+    })
 
     // Add new players
     const players = getPlayers();
