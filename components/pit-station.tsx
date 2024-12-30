@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from "react"
-import { Bell, History, Menu, Search, User, UserCircle } from 'lucide-react'
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { useEffect, useState } from "react";
+import { Bell, History, Menu, Search, User, UserCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -12,115 +12,117 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@/components/ui/sheet"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { PlayerSearchModal } from "@/components/player-search-modal"
-import { CasinoSelector } from "@/components/casino-selector"
-import { createClient } from '@/utils/supabase/client'
-import { CasinoFloorView } from "./casino-floor-view"
-import { AddPlayerModal } from "@/components/add-player-modal"
+} from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PlayerSearchModal } from "@/components/player-search-modal";
+import { CasinoSelector } from "@/components/casino-selector";
+import { createClient } from "@/utils/supabase/client";
+import { CasinoFloorView } from "./casino-floor-view";
+import { AddPlayerModal } from "@/components/add-player-modal";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 
 interface Player {
-  id: string
-  name: string
-  type: string
-  table: string
-  seat: number
-  avgBet: number
-  cashIn: number
-  startTime: string
-  duration: string
-  status: "active" | "inactive" | "warning"
+  id: string;
+  firstName: string;
+  type: string;
+  gamingtable: string;
+  seat: number;
+  avgBet: number;
+  cashIn: number;
+  startTime: string;
+  duration: string;
+  status: "active" | "inactive" | "warning";
 }
 
 interface Visit {
-  id: string
-  player_id: string | null
-  check_in_date: string
-  check_out_date: string | null
+  id: string;
+  player_id: string | null;
+  check_in_date: string;
+  check_out_date: string | null;
   player: {
-    name: string | null
-  }
+    firstName: string | null;
+  };
 }
 
 export default function PitStation() {
-  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null)
-  const [selectedCasino, setSelectedCasino] = useState<string>('')
-  const [activeVisits, setActiveVisits] = useState<Visit[]>([])
-  const supabase = createClient()
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [selectedCasino, setSelectedCasino] = useState<string>("");
+  const [activeVisits, setActiveVisits] = useState<Visit[]>([]);
+  const supabase = createClient();
 
   // Fetch active visits when casino changes
   useEffect(() => {
-    if (!selectedCasino) return
+    if (!selectedCasino) return;
 
     const fetchActiveVisits = async () => {
       const { data, error } = await supabase
-        .from('visit')
-        .select(`
+        .from("visit")
+        .select(
+          `
           id,
           player_id,
           check_in_date,
           check_out_date,
-          player:player!player_id(name)
-        `)
-        .eq('casino_id', selectedCasino)
-        .is('check_out_date', null)
-        .order('check_in_date', { ascending: false })
-      console.log(data)
+          player:player!player_id(firstName)
+        `
+        )
+        .eq("casino_id", selectedCasino)
+        .is("check_out_date", null)
+        .order("check_in_date", { ascending: false });
+      console.log(data);
       if (error) {
-        console.error('Error fetching visits:', error)
-        return
+        console.error("Error fetching visits:", error);
+        return;
       }
 
-      const formattedData = data.map(visit => ({
+      const formattedData = data.map((visit) => ({
         ...visit,
-        player: Array.isArray(visit.player) ? visit.player[0] : visit.player
-      }))
+        player: Array.isArray(visit.player) ? visit.player[0] : visit.player,
+      }));
 
-      setActiveVisits(formattedData)
-    }
+      setActiveVisits(formattedData);
+    };
 
-    fetchActiveVisits()
+    fetchActiveVisits();
 
     // Subscribe to changes in visits
     const channel = supabase
-      .channel('visits_changes')
+      .channel("visits_changes")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'visits',
+          event: "*",
+          schema: "public",
+          table: "visits",
           filter: `casino_id=eq.${selectedCasino}`,
         },
         () => {
-          fetchActiveVisits()
+          fetchActiveVisits();
         }
       )
-      .subscribe()
+      .subscribe();
 
     return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [selectedCasino])
+      supabase.removeChannel(channel);
+    };
+  }, [selectedCasino]);
 
   const handleCasinoChange = (casinoId: string) => {
-    setSelectedCasino(casinoId)
-  }
+    setSelectedCasino(casinoId);
+  };
 
   return (
     <div className="fixed inset-0 w-screen h-screen bg-background">
@@ -151,7 +153,10 @@ export default function PitStation() {
                     <Button variant="ghost" className="justify-start">
                       Issue Reward
                     </Button>
-                    <Button variant="ghost" className="justify-start text-red-500">
+                    <Button
+                      variant="ghost"
+                      className="justify-start text-red-500"
+                    >
                       Log Out
                     </Button>
                   </div>
@@ -183,17 +188,19 @@ export default function PitStation() {
                 <DialogHeader>
                   <DialogTitle>Search Players</DialogTitle>
                 </DialogHeader>
-                <PlayerSearchModal 
-                  selectedCasino={selectedCasino} 
+                <PlayerSearchModal
+                  selectedCasino={selectedCasino}
                   mode="visit"
                   onPlayerSelected={(player) => {
                     // Handle player selection for visit mode
-                    console.log('Selected player:', player)
+                    console.log("Selected player:", player);
                   }}
                 />
               </DialogContent>
             </Dialog>
-            {selectedCasino && <AddPlayerModal selectedCasino={selectedCasino} />}
+            {selectedCasino && (
+              <AddPlayerModal selectedCasino={selectedCasino} />
+            )}
           </div>
         </header>
 
@@ -203,7 +210,7 @@ export default function PitStation() {
               <TabsTrigger value="floor">Casino Floor</TabsTrigger>
               <TabsTrigger value="visitors">Visitor View</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="visitors">
               <Table>
                 <TableHeader>
@@ -216,20 +223,30 @@ export default function PitStation() {
                 </TableHeader>
                 <TableBody>
                   {activeVisits.map((visit) => {
-                    const duration = new Date().getTime() - new Date(visit.check_in_date).getTime()
-                    const hours = Math.floor(duration / (1000 * 60 * 60))
-                    const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60))
-                    
+                    const duration =
+                      new Date().getTime() -
+                      new Date(visit.check_in_date).getTime();
+                    const hours = Math.floor(duration / (1000 * 60 * 60));
+                    const minutes = Math.floor(
+                      (duration % (1000 * 60 * 60)) / (1000 * 60)
+                    );
+
                     return (
                       <TableRow key={visit.id}>
-                        <TableCell className="font-medium">{visit.player.name || 'Unknown'}</TableCell>
-                        <TableCell>{new Date(visit.check_in_date).toLocaleTimeString()}</TableCell>
-                        <TableCell>{`${hours}:${minutes.toString().padStart(2, '0')}`}</TableCell>
+                        <TableCell className="font-medium">
+                          {visit.player.firstName || "Unknown"}
+                        </TableCell>
                         <TableCell>
-                          <Button variant="outline" size="sm">View Details</Button>
+                          {new Date(visit.check_in_date).toLocaleTimeString()}
+                        </TableCell>
+                        <TableCell>{`${hours}:${minutes.toString().padStart(2, "0")}`}</TableCell>
+                        <TableCell>
+                          <Button variant="outline" size="sm">
+                            View Details
+                          </Button>
                         </TableCell>
                       </TableRow>
-                    )
+                    );
                   })}
                 </TableBody>
               </Table>
@@ -243,7 +260,10 @@ export default function PitStation() {
       </div>
 
       {/* Right Sidebar - Player Details */}
-      <Sheet open={!!selectedPlayer} onOpenChange={() => setSelectedPlayer(null)}>
+      <Sheet
+        open={!!selectedPlayer}
+        onOpenChange={() => setSelectedPlayer(null)}
+      >
         <SheetContent className="w-full sm:max-w-md">
           <SheetHeader>
             <SheetTitle>Player Details</SheetTitle>
@@ -267,7 +287,7 @@ export default function PitStation() {
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <label className="text-sm font-medium">Table</label>
-                            <div className="mt-1">{selectedPlayer.table}</div>
+                            <div className="mt-1">{selectedPlayer.gamingtable}</div>
                           </div>
                           <div>
                             <label className="text-sm font-medium">Seat</label>
@@ -275,7 +295,9 @@ export default function PitStation() {
                           </div>
                         </div>
                         <div>
-                          <label className="text-sm font-medium">Average Bet</label>
+                          <label className="text-sm font-medium">
+                            Average Bet
+                          </label>
                           <div className="mt-1">${selectedPlayer.avgBet}</div>
                         </div>
                         <div>
@@ -284,12 +306,20 @@ export default function PitStation() {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className="text-sm font-medium">Start Time</label>
-                            <div className="mt-1">{selectedPlayer.startTime}</div>
+                            <label className="text-sm font-medium">
+                              Start Time
+                            </label>
+                            <div className="mt-1">
+                              {selectedPlayer.startTime}
+                            </div>
                           </div>
                           <div>
-                            <label className="text-sm font-medium">Duration</label>
-                            <div className="mt-1">{selectedPlayer.duration}</div>
+                            <label className="text-sm font-medium">
+                              Duration
+                            </label>
+                            <div className="mt-1">
+                              {selectedPlayer.duration}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -306,6 +336,5 @@ export default function PitStation() {
         </SheetContent>
       </Sheet>
     </div>
-  )
+  );
 }
-

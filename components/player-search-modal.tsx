@@ -68,7 +68,7 @@ export function PlayerSearchModal({
             className="p-3 border rounded-lg hover:bg-muted cursor-pointer"
             onClick={() => onPlayerSelected(player)}
           >
-            <div className="font-medium">{player.name}</div>
+            <div className="font-medium">{player.firstName}</div>
             <div className="text-sm text-muted-foreground">
               {player.phone_number} • {player.email}
             </div>
