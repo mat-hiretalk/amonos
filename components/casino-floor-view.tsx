@@ -1,147 +1,70 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { CasinoTable, TableData } from "./casino-table";
-import { createClient } from "@/utils/supabase/client";
-import { Database } from "@/types/database.types";
+import CasinoTable from "./casino-table";
+import type { TableData } from "./casino-table";
+import {
+  fetchCasinoTables,
+  fetchActiveRatingSlips,
+  createRatingSlip,
+  type TableWithSettings,
+  type RatingSlipWithPlayer,
+} from "@/app/actions/casino";
 
-type TableWithSettings = {
-  gaming_table_id: string;
-  casino_id: string;
-  table_name: string;
-  settings_name: string;
-  seats_available: number;
-};
+interface CasinoFloorViewProps {
+  casinoId: string;
+}
 
-export function CasinoFloorView() {
+export function CasinoFloorView({ casinoId }: CasinoFloorViewProps) {
   const [tables, setTables] = useState<TableWithSettings[]>([]);
-  const [ratingSlips, setRatingSlips] = useState<
-    Database["public"]["Tables"]["ratingslip"]["Row"][]
-  >([]);
-  const supabase = createClient();
+  const [ratingSlips, setRatingSlips] = useState<RatingSlipWithPlayer[]>([]);
 
   useEffect(() => {
     async function fetchData() {
-      // Fetch tables with settings
-      const { data: tableData, error: tableError } = await supabase.from(
-        "gamingtable"
-      ).select(`
-          id,
-          casino_id,
-          name,
-          gamingtablesettings (
-            gamesettings (
-              name,
-              seats_available
-            )
-          )
-        `);
+      try {
+        const [tablesData, slipsData] = await Promise.all([
+          fetchCasinoTables(casinoId),
+          fetchActiveRatingSlips(),
+        ]);
 
-      if (tableError) {
-        console.error("Error fetching tables:", tableError);
-        return;
+        setTables(tablesData);
+        setRatingSlips(slipsData);
+      } catch (error) {
+        console.error("Error fetching data:", error);
       }
-
-      const formattedTables =
-        tableData?.map((table) => ({
-          gaming_table_id: table.id,
-          casino_id: table.casino_id || "",
-          table_name: table.name,
-          settings_name:
-            table.gamingtablesettings?.[0]?.gamesettings?.name || "",
-          seats_available:
-            table.gamingtablesettings?.[0]?.gamesettings?.seats_available || 0,
-        })) || [];
-
-      setTables(formattedTables);
-
-      // Fetch active rating slips (where end_time is null)
-      const { data: slipData, error: slipError } = await supabase
-        .from("ratingslip")
-        .select(
-          `
-          *,
-          visit (
-            player (
-              firstName,
-              lastName
-            )
-          )
-        `
-        )
-        .is("end_time", null);
-      console.log("slipData", slipData);
-      if (slipError) {
-        console.error("Error fetching rating slips:", slipError);
-        return;
-      }
-
-      if (slipData) setRatingSlips(slipData);
     }
 
     fetchData();
 
-    // Set up real-time subscriptions
-    const tableChannel = supabase
-      .channel("table_changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "activetablesandsettings",
-        },
-        () => fetchData()
-      )
-      .subscribe();
+    // Set up polling for updates
+    const intervalId = setInterval(fetchData, 5000);
 
-    const ratingSlipChannel = supabase
-      .channel("rating_slip_changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "ratingslip",
-        },
-        () => fetchData()
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(tableChannel);
-      supabase.removeChannel(ratingSlipChannel);
-    };
-  }, []);
+    return () => clearInterval(intervalId);
+  }, [casinoId]);
 
   const handleUpdateTable = async (
     updatedTable: TableData,
     playerId: string,
     seatNumber: number
   ) => {
-    const { data: visitData, error: visitError } = await supabase
-      .from("visit")
-      .select("id")
-      .eq("player_id", playerId)
-      .is("check_out_date", null)
-      .single();
+    try {
+      console.log("Creating rating slip with table:", {
+        tableId: updatedTable.id,
+        playerId,
+        seatNumber,
+        casinoId,
+      });
 
-    if (visitError) {
-      console.error("Error finding active visit:", visitError);
-      return;
-    }
-
-    const { error: ratingError } = await supabase.from("ratingslip").insert({
-      gaming_table_id: updatedTable.id,
-      visit_id: visitData.id,
-      start_time: new Date().toISOString(),
-      average_bet: 0,
-      seat_number: seatNumber,
-      game_settings: {},
-    });
-
-    if (ratingError) {
-      console.error("Error creating rating slip:", ratingError);
+      await createRatingSlip(updatedTable.id, playerId, seatNumber, casinoId);
+      // Refresh data after creating a new rating slip
+      const [tablesData, slipsData] = await Promise.all([
+        fetchCasinoTables(casinoId),
+        fetchActiveRatingSlips(),
+      ]);
+      setTables(tablesData);
+      setRatingSlips(slipsData);
+    } catch (error) {
+      console.error("Error updating table:", error);
     }
   };
 
@@ -162,7 +85,7 @@ export function CasinoFloorView() {
                 seats: Array.from(
                   { length: Number(table.seats_available ?? 0) },
                   () => null
-                ) as (Database["public"]["Tables"]["player"]["Row"] | null)[],
+                ),
                 averageBet:
                   tableRatingSlips.reduce(
                     (sum, slip) => sum + slip.average_bet,

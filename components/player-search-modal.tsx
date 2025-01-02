@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/utils/supabase/client";
 import { Database } from "@/database.types";
+import { searchPlayers } from "@/app/actions/player";
 
-type Player = Database["public"]["Tables"]["player"]["Row"];
+type Player = Database["public"]["Tables"]["player"]["Row"] & {
+  ratingslipId?: string | null;
+};
 
 interface PlayerSearchModalProps {
   selectedCasino: string;
@@ -23,27 +24,19 @@ export function PlayerSearchModal({
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const supabase = createClient();
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) return;
 
     setIsLoading(true);
-    const { data, error } = await supabase
-      .from("player")
-      .select("*")
-      .or(
-        `name.ilike.%${searchTerm}%,phone_number.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`
-      )
-      .limit(10);
-    setIsLoading(false);
-
-    if (error) {
+    try {
+      const players = await searchPlayers(searchTerm);
+      setSearchResults(players);
+    } catch (error) {
       console.error("Error searching players:", error);
-      return;
+    } finally {
+      setIsLoading(false);
     }
-
-    setSearchResults(data || []);
   };
 
   return (
@@ -68,7 +61,9 @@ export function PlayerSearchModal({
             className="p-3 border rounded-lg hover:bg-muted cursor-pointer"
             onClick={() => onPlayerSelected(player)}
           >
-            <div className="font-medium">{player.firstName}</div>
+            <div className="font-medium">
+              {player.firstName} {player.lastName}
+            </div>
             <div className="text-sm text-muted-foreground">
               {player.phone_number} • {player.email}
             </div>
