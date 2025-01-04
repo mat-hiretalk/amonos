@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { startRating } from "@/app/actions/start-rating";
+import { Casino } from "@/app/actions/switch-casinos";
 
 // Types
 type Player = Database["public"]["Tables"]["player"]["Row"];
@@ -22,7 +23,7 @@ type TableSeat = {
 };
 
 interface PlayerSearchModalProps {
-  selectedCasino: string;
+  selectedCasino: string | null;
   onPlayerSelected: (
     player: Player,
     action: "visit" | "seat",
@@ -176,7 +177,7 @@ export function PlayerSearchModal({
 
   const handleAction = async (player: Player, action: "visit" | "seat") => {
     setError(null);
-
+    if (!selectedCasino) return;
     try {
       if (action === "seat") {
         setSelectedPlayer(player);
@@ -200,7 +201,7 @@ export function PlayerSearchModal({
     try {
       const visit = await playerService.createVisit(
         selectedPlayer.id,
-        selectedCasino
+        selectedCasino!
       );
       await startRating(visit.id, seat.table_id, seat.seat_number, 0, {});
 

@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import {
   Dialog,
@@ -6,17 +6,19 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { AddPlayerForm } from "./add-player-form"
-import { UserPlus } from "lucide-react"
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { AddPlayerForm } from "./add-player-form";
+import { UserPlus } from "lucide-react";
+
+import { Casino } from "@/app/actions/switch-casinos";
 
 interface AddPlayerModalProps {
-  selectedCasino: string
-  trigger?: React.ReactNode
+  casino: Casino;
+  trigger?: React.ReactNode;
 }
 
-export function AddPlayerModal({ selectedCasino, trigger }: AddPlayerModalProps) {
+export function AddPlayerModal({ casino, trigger }: AddPlayerModalProps) {
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -31,8 +33,8 @@ export function AddPlayerModal({ selectedCasino, trigger }: AddPlayerModalProps)
         <DialogHeader>
           <DialogTitle>Add New Player</DialogTitle>
         </DialogHeader>
-        <AddPlayerForm selectedCasino={selectedCasino} />
+        <AddPlayerForm casino={casino} />
       </DialogContent>
     </Dialog>
-  )
-} 
+  );
+}

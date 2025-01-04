@@ -1,10 +1,9 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from "react"
-import { Bell, History, Menu, Search, User, UserCircle } from 'lucide-react'
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { useEffect, useState } from "react";
+import { Bell, History, Menu, Search, User, UserCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -12,119 +11,122 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@/components/ui/sheet"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { PlayerSearchModal } from "@/components/player-search-modal"
-import { CasinoSelector } from "@/components/casino-selector"
-import { createClient } from '@/utils/supabase/client'
-import { CasinoFloorView } from "./casino-floor-view"
-import { AddPlayerModal } from "@/components/add-player-modal"
+} from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PlayerSearchModal } from "@/components/player-search-modal";
+import { createClient } from "@/utils/supabase/client";
+import { CasinoFloorView } from "./casino-floor-view";
+import { AddPlayerModal } from "@/components/add-player-modal";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { type TableSeat } from "./casino-floor-view"
+} from "@/components/ui/dialog";
+import { type TableSeat } from "./casino-floor-view";
+import { Casino } from "@/app/actions/switch-casinos";
 
 interface Player {
-  id: string
-  name: string
-  type: string
-  table: string
-  seat: number
-  avgBet: number
-  cashIn: number
-  startTime: string
-  duration: string
-  status: "active" | "inactive" | "warning"
+  id: string;
+  name: string;
+  type: string;
+  table: string;
+  seat: number;
+  avgBet: number;
+  cashIn: number;
+  startTime: string;
+  duration: string;
+  status: "active" | "inactive" | "warning";
 }
 
 interface Visit {
-  id: string
-  player_id: string | null
-  check_in_date: string
-  check_out_date: string | null
+  id: string;
+  player_id: string | null;
+  check_in_date: string;
+  check_out_date: string | null;
   player: {
-    name: string | null
-  }
+    name: string | null;
+  };
 }
 
-export default function PitStation() {
-  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null)
-  const [selectedCasino, setSelectedCasino] = useState<string>('')
-  const [activeVisits, setActiveVisits] = useState<Visit[]>([])
-  const [activeTab, setActiveTab] = useState('floor')
-  const [searchDialogOpen, setSearchDialogOpen] = useState(false)
-  const [selectedSeat, setSelectedSeat] = useState<TableSeat | undefined>(undefined)
-  const supabase = createClient()
+type PitStationProps = {
+  casino: Casino;
+};
+
+export default function PitStation({ casino }: PitStationProps) {
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [activeVisits, setActiveVisits] = useState<Visit[]>([]);
+  const [activeTab, setActiveTab] = useState("floor");
+  const [searchDialogOpen, setSearchDialogOpen] = useState(false);
+  const [selectedSeat, setSelectedSeat] = useState<TableSeat | undefined>(
+    undefined
+  );
+  const supabase = createClient();
 
   // Fetch active visits when casino changes
   useEffect(() => {
-    if (!selectedCasino) return
+    if (!casino) return;
 
     const fetchActiveVisits = async () => {
       const { data, error } = await supabase
-        .from('visit')
-        .select(`
+        .from("visit")
+        .select(
+          `
           id,
           player_id,
           check_in_date,
           check_out_date,
           player:player!player_id(name)
-        `)
-        .eq('casino_id', selectedCasino)
-        .is('check_out_date', null)
-        .order('check_in_date', { ascending: false })
-      console.log(data)
+        `
+        )
+        .eq("casino_id", casino.id)
+        .is("check_out_date", null)
+        .order("check_in_date", { ascending: false });
+      console.log("visits", data);
       if (error) {
-        console.error('Error fetching visits:', error)
-        return
+        console.error("Error fetching visits:", error);
+        return;
       }
 
-      const formattedData = data.map(visit => ({
+      const formattedData = data.map((visit) => ({
         ...visit,
-        player: Array.isArray(visit.player) ? visit.player[0] : visit.player
-      }))
+        player: Array.isArray(visit.player) ? visit.player[0] : visit.player,
+      }));
 
-      setActiveVisits(formattedData)
-    }
+      setActiveVisits(formattedData);
+    };
 
-    fetchActiveVisits()
+    fetchActiveVisits();
 
     // Subscribe to changes in visits
     const channel = supabase
-      .channel('visits_changes')
+      .channel("visits_changes")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'visits',
-          filter: `casino_id=eq.${selectedCasino}`,
+          event: "*",
+          schema: "public",
+          table: "visits",
+          filter: `casino_id=eq.${casino.id}`,
         },
         () => {
-          fetchActiveVisits()
+          fetchActiveVisits();
         }
       )
-      .subscribe()
+      .subscribe();
 
     return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [selectedCasino])
-
-  const handleCasinoChange = (casinoId: string) => {
-    setSelectedCasino(casinoId)
-  }
+      supabase.removeChannel(channel);
+    };
+  }, [casino]);
 
   return (
     <div className="fixed inset-0 w-screen h-screen bg-background">
@@ -155,16 +157,20 @@ export default function PitStation() {
                     <Button variant="ghost" className="justify-start">
                       Issue Reward
                     </Button>
-                    <Button variant="ghost" className="justify-start text-red-500">
+                    <Button
+                      variant="ghost"
+                      className="justify-start text-red-500"
+                    >
                       Log Out
                     </Button>
                   </div>
                 </SheetContent>
               </Sheet>
-              <h1 className="text-xl font-bold">Pit Station</h1>
+              <h1 className="text-xl font-bold">
+                {casino.name} - {casino.location}
+              </h1>
             </div>
             <div className="flex items-center gap-4">
-              <CasinoSelector onCasinoChange={handleCasinoChange} />
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="icon">
                   <Bell className="h-4 w-4" />
@@ -187,35 +193,39 @@ export default function PitStation() {
                 <DialogHeader>
                   <DialogTitle>Search Players</DialogTitle>
                 </DialogHeader>
-                <PlayerSearchModal 
-                  selectedCasino={selectedCasino} 
+                <PlayerSearchModal
+                  selectedCasino={casino.id}
                   preSelectedSeat={selectedSeat}
                   onPlayerSelected={(player, action, seatInfo) => {
                     if (action === "visit") {
                       // Handle visit action if needed
-                      console.log('Player visit:', player)
+                      console.log("Player visit:", player);
                     } else if (action === "seat" && seatInfo) {
                       // Handle seating the player
-                      setActiveTab('floor')
-                      setSelectedSeat(undefined)
+                      setActiveTab("floor");
+                      setSelectedSeat(undefined);
                       // You might want to add additional logic here to update the floor view
                     }
-                    setSearchDialogOpen(false)
+                    setSearchDialogOpen(false);
                   }}
                 />
               </DialogContent>
             </Dialog>
-            {selectedCasino && <AddPlayerModal selectedCasino={selectedCasino} />}
+            {casino && <AddPlayerModal casino={casino} />}
           </div>
         </header>
 
         <div className="flex-1 p-4 overflow-auto">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full"
+          >
             <TabsList className="mb-4">
               <TabsTrigger value="floor">Casino Floor</TabsTrigger>
               <TabsTrigger value="visitors">Visitor View</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="visitors">
               <Table>
                 <TableHeader>
@@ -228,30 +238,41 @@ export default function PitStation() {
                 </TableHeader>
                 <TableBody>
                   {activeVisits.map((visit) => {
-                    const duration = new Date().getTime() - new Date(visit.check_in_date).getTime()
-                    const hours = Math.floor(duration / (1000 * 60 * 60))
-                    const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60))
-                    
+                    const duration =
+                      new Date().getTime() -
+                      new Date(visit.check_in_date).getTime();
+                    const hours = Math.floor(duration / (1000 * 60 * 60));
+                    const minutes = Math.floor(
+                      (duration % (1000 * 60 * 60)) / (1000 * 60)
+                    );
+
                     return (
                       <TableRow key={visit.id}>
-                        <TableCell className="font-medium">{visit.player.name || 'Unknown'}</TableCell>
-                        <TableCell>{new Date(visit.check_in_date).toLocaleTimeString()}</TableCell>
-                        <TableCell>{`${hours}:${minutes.toString().padStart(2, '0')}`}</TableCell>
+                        <TableCell className="font-medium">
+                          {visit.player.name || "Unknown"}
+                        </TableCell>
                         <TableCell>
-                          <Button variant="outline" size="sm">View Details</Button>
+                          {new Date(visit.check_in_date).toLocaleTimeString()}
+                        </TableCell>
+                        <TableCell>{`${hours}:${minutes.toString().padStart(2, "0")}`}</TableCell>
+                        <TableCell>
+                          <Button variant="outline" size="sm">
+                            View Details
+                          </Button>
                         </TableCell>
                       </TableRow>
-                    )
+                    );
                   })}
                 </TableBody>
               </Table>
             </TabsContent>
 
             <TabsContent value="floor">
-              <CasinoFloorView 
+              <CasinoFloorView
+                selectedCasino={casino.id}
                 onSeatSelect={(seat) => {
-                  setSelectedSeat(seat)
-                  setSearchDialogOpen(true)
+                  setSelectedSeat(seat);
+                  setSearchDialogOpen(true);
                 }}
               />
             </TabsContent>
@@ -260,7 +281,10 @@ export default function PitStation() {
       </div>
 
       {/* Right Sidebar - Player Details */}
-      <Sheet open={!!selectedPlayer} onOpenChange={() => setSelectedPlayer(null)}>
+      <Sheet
+        open={!!selectedPlayer}
+        onOpenChange={() => setSelectedPlayer(null)}
+      >
         <SheetContent className="w-full sm:max-w-md">
           <SheetHeader>
             <SheetTitle>Player Details</SheetTitle>
@@ -292,7 +316,9 @@ export default function PitStation() {
                           </div>
                         </div>
                         <div>
-                          <label className="text-sm font-medium">Average Bet</label>
+                          <label className="text-sm font-medium">
+                            Average Bet
+                          </label>
                           <div className="mt-1">${selectedPlayer.avgBet}</div>
                         </div>
                         <div>
@@ -301,12 +327,20 @@ export default function PitStation() {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className="text-sm font-medium">Start Time</label>
-                            <div className="mt-1">{selectedPlayer.startTime}</div>
+                            <label className="text-sm font-medium">
+                              Start Time
+                            </label>
+                            <div className="mt-1">
+                              {selectedPlayer.startTime}
+                            </div>
                           </div>
                           <div>
-                            <label className="text-sm font-medium">Duration</label>
-                            <div className="mt-1">{selectedPlayer.duration}</div>
+                            <label className="text-sm font-medium">
+                              Duration
+                            </label>
+                            <div className="mt-1">
+                              {selectedPlayer.duration}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -323,6 +357,5 @@ export default function PitStation() {
         </SheetContent>
       </Sheet>
     </div>
-  )
+  );
 }
-

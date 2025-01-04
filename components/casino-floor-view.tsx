@@ -21,10 +21,12 @@ export type TableSeat = {
 };
 
 interface CasinoFloorViewProps {
+  selectedCasino: string | null;
   onSeatSelect: (seat: TableSeat) => void;
 }
 
 export function CasinoFloorView({
+  selectedCasino,
   onSeatSelect,
 }: CasinoFloorViewProps): JSX.Element {
   const [tables, setTables] = useState<GamingTable[]>([]);
@@ -35,11 +37,13 @@ export function CasinoFloorView({
 
   useEffect(() => {
     async function fetchData() {
+      // console.log("fetching data");
       try {
         // Fetch tables
         const { data: tableData, error: tableError } = await supabase
           .from("activetablesandsettings")
-          .select("*");
+          .select("*")
+          .eq("casino_id", selectedCasino!);
 
         if (tableError) {
           console.error("Error fetching tables:", tableError);
@@ -100,7 +104,7 @@ export function CasinoFloorView({
         },
         () => fetchData()
       )
-      .subscribe();
+      .subscribe(() => console.log("subscribed to rating slip changes"));
 
     return () => {
       supabase.removeChannel(tableChannel);
