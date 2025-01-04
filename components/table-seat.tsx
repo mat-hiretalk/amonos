@@ -10,6 +10,7 @@ type Player = Database["public"]["Tables"]["player"]["Row"];
 type RatingSlip = Database["public"]["Tables"]["ratingslip"]["Row"] & {
   visit?: {
     player?: {
+      points: number;
       name: string;
       id: string;
     };
@@ -48,8 +49,10 @@ export function TableSeat({
   gameSettings,
 }: SeatProps) {
   const [isRatingSlipOpen, setIsRatingSlipOpen] = useState(false);
+  const currentlyEarnedPoints = occupiedBy?.visit?.player?.points ?? 0;
   const [currentPoints, setCurrentPoints] = useState(0);
 
+  console.log("player", currentlyEarnedPoints);
   useEffect(() => {
     if (occupiedBy) {
       const interval = setInterval(() => {
@@ -123,7 +126,8 @@ export function TableSeat({
             <div className="text-sm">
               <p className="font-medium">{occupiedBy?.visit?.player?.name}</p>
               <p className="text-muted-foreground text-xs">
-                points: {currentPoints.toFixed(0)}
+                points:{" "}
+                {`(${currentlyEarnedPoints}) ${currentPoints.toFixed(0)}`}
               </p>
             </div>
           </div>

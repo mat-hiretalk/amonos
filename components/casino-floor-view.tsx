@@ -62,7 +62,8 @@ export function CasinoFloorView({
             visit:visit_id (
               player:player_id (
                 name,
-                id
+                id,
+                points
               )
             )
           `

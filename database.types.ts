@@ -216,6 +216,7 @@ export type Database = {
           id: string
           name: string
           phone_number: string | null
+          points: number
         }
         Insert: {
           company_id?: string | null
@@ -224,6 +225,7 @@ export type Database = {
           id?: string
           name: string
           phone_number?: string | null
+          points?: number
         }
         Update: {
           company_id?: string | null
@@ -232,6 +234,7 @@ export type Database = {
           id?: string
           name?: string
           phone_number?: string | null
+          points?: number
         }
         Relationships: [
           {
@@ -296,6 +299,41 @@ export type Database = {
           },
           {
             foreignKeyName: "playerlanguage_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "player"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      point_transactions: {
+        Row: {
+          created_at: string
+          description: string | null
+          new_balance: number
+          player_id: string
+          points_delta: number
+          transaction_id: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          new_balance: number
+          player_id: string
+          points_delta: number
+          transaction_id?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          new_balance?: number
+          player_id?: string
+          points_delta?: number
+          transaction_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_player_id"
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "player"
