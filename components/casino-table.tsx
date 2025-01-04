@@ -16,6 +16,7 @@ import { GameSettings } from "@/utils/points";
 type RatingSlip = Database["public"]["Tables"]["ratingslip"]["Row"] & {
   visit?: {
     player?: {
+      points: number;
       name: string;
       id: string;
     };
