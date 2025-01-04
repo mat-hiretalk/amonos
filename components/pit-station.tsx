@@ -42,6 +42,7 @@ import {
 import { type TableSeat } from "./casino-floor-view";
 import { Casino } from "@/app/actions/switch-casinos";
 import { startRating } from "@/app/actions/start-rating";
+import { endVisit } from "@/app/actions/stop-rating";
 
 interface Player {
   id: string;
@@ -123,14 +124,14 @@ export default function PitStation({ casino }: PitStationProps) {
         {
           event: "*",
           schema: "public",
-          table: "visits",
-          filter: `casino_id=eq.${casino.id}`,
+          table: "visit",
+          // filter: `casino_id=eq.${casino.id}`,
         },
         () => {
           fetchActiveVisits();
         }
       )
-      .subscribe();
+      .subscribe(() => console.log("subscribed to visits changes"));
 
     return () => {
       supabase.removeChannel(channel);
@@ -277,8 +278,12 @@ export default function PitStation({ casino }: PitStationProps) {
                         </TableCell>
                         <TableCell>{`${hours}:${minutes.toString().padStart(2, "0")}`}</TableCell>
                         <TableCell>
-                          <Button variant="outline" size="sm">
-                            View Details
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => endVisit(visit.id)}
+                          >
+                            End Visit
                           </Button>
                         </TableCell>
                       </TableRow>
