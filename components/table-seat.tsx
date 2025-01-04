@@ -81,7 +81,11 @@ export function TableSeat({
     return (
       <>
         <div
-          ref={(node) => drag(drop(node))}
+          ref={(node) => {
+            if (node) {
+              drag(drop(node));
+            }
+          }}
           className={`flex items-center justify-between p-2 bg-secondary rounded-md cursor-move hover:bg-secondary/80 ${
             isDragging ? "opacity-50" : ""
           }`}
@@ -115,7 +119,11 @@ export function TableSeat({
 
   return (
     <div
-      ref={drop}
+      ref={(node) => {
+        if (node) {
+          drop(node);
+        }
+      }}
       onClick={() => onSeatPlayer(seatNumber)}
       className={`${isOver ? "bg-secondary/50" : ""}`}
     >
