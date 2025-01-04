@@ -59,6 +59,7 @@ export function CasinoTable({
   };
 
   const handlePlayerSelected = (player: Player) => {
+    console.log("handlePlayerSelected", player, selectedSeat);
     if (selectedSeat === null) return;
 
     const updatedSeats = [...table.seats];

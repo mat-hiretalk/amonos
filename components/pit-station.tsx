@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/dialog";
 import { type TableSeat } from "./casino-floor-view";
 import { Casino } from "@/app/actions/switch-casinos";
+import { startRating } from "@/app/actions/start-rating";
 
 interface Player {
   id: string;
@@ -209,11 +210,23 @@ export default function PitStation({ casino }: PitStationProps) {
                 <PlayerSearchModal
                   selectedCasino={casino.id}
                   preSelectedSeat={selectedSeat}
-                  onPlayerSelected={(player, action, seatInfo) => {
+                  onPlayerSelected={async (player, action, seatInfo) => {
                     if (action === "visit") {
                       // Handle visit action if needed
                       console.log("Player visit:", player);
                     } else if (action === "seat" && seatInfo) {
+                      const visitId = player.active_visit?.id;
+                      if (visitId) {
+                        await startRating(
+                          visitId,
+                          seatInfo.table_id,
+                          seatInfo.seat_number,
+                          0,
+                          {}
+                        );
+                      } else {
+                        console.error("No active visit ID found for player");
+                      }
                       // Handle seating the player
                       setActiveTab("floor");
                       setSelectedSeat(undefined);

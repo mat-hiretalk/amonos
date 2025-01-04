@@ -232,7 +232,6 @@ export function PlayerSearchModal({
         );
         visit = visitData.id;
       }
-      await startRating(visit, seat.table_id, seat.seat_number, 0, {});
 
       setShowSeatSelector(false);
       onPlayerSelected(selectedPlayer, "seat", {
