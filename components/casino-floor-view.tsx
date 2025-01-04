@@ -28,38 +28,46 @@ export function CasinoFloorView({ onSeatSelect }: CasinoFloorViewProps): JSX.Ele
   const [ratingSlips, setRatingSlips] = useState<RatingSlip[]>([])
   const supabase = createClient();
 
+  
+
+  const [isLoading, setIsLoading] = useState(true)
+
   useEffect(() => {
     async function fetchData() {
-      // Fetch tables
-      const { data: tableData, error: tableError } = await supabase
-        .from('activetablesandsettings')
-        .select('*')
-      
-      if (tableError) {
-        console.error('Error fetching tables:', tableError)
-        return
-      }
+      try {
+        // Fetch tables
+        const { data: tableData, error: tableError } = await supabase
+          .from('activetablesandsettings')
+          .select('*')
+        
+        if (tableError) {
+          console.error('Error fetching tables:', tableError)
+          return
+        }
 
-      // Fetch active rating slips (where end_time is null)
-      const { data: slipData, error: slipError } = await supabase
-        .from('ratingslip')
-        .select(`
-          *,
-          visit:visit_id (
-            player:player_id (
-              name
+        // Fetch active rating slips (where end_time is null)
+        const { data: slipData, error: slipError } = await supabase
+          .from('ratingslip')
+          .select(`
+            *,
+            visit:visit_id (
+              player:player_id (
+                name
+              )
             )
-          )
-        `)
-        .is('end_time', null)
-      console.log("slipData", slipData)
-      if (slipError) {
-        console.error('Error fetching rating slips:', slipError)
-        return
-      }
+          `)
+          .is('end_time', null)
 
-      if (tableData) setTables(tableData)
-      if (slipData) setRatingSlips(slipData)
+        if (slipError) {
+          console.error('Error fetching rating slips:', slipError)
+          return
+        }
+
+        if (tableData) setTables(tableData)
+        if (slipData) setRatingSlips(slipData)
+      } finally {
+        setIsLoading(false)
+      }
     }
 
     fetchData()
