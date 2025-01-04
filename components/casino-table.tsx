@@ -105,7 +105,9 @@ export function CasinoTable({
           </div>
           <div className="flex items-center space-x-2">
             <DollarSign className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xl font-bold">{table.averageBet}</span>
+            <span className="text-xl font-bold">
+              {table.averageBet.toFixed(2)}
+            </span>
           </div>
           <Badge variant={table.status === "active" ? "default" : "secondary"}>
             {table.status === "active" ? "Active" : "Inactive"}
