@@ -49,7 +49,7 @@ export function CasinoSelectionPage({}: CasinoSelectionPageProps) {
         {casinos.map((casino) => (
           <div key={casino.id}>
             <button onClick={() => handleCasinoSelect(casino.id)}>
-              {casino.name}
+              {casino.name} - {casino.location}
             </button>
           </div>
         ))}

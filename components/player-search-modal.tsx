@@ -15,7 +15,9 @@ import { startRating } from "@/app/actions/start-rating";
 import { Casino } from "@/app/actions/switch-casinos";
 
 // Types
-type Player = Database["public"]["Tables"]["player"]["Row"];
+type Player = Database["public"]["Tables"]["player"]["Row"] & {
+  active_visit?: { id: string; casino_id: string | null };
+};
 type TableSeat = {
   table_id: string;
   seat_number: number;
@@ -36,17 +38,41 @@ interface PlayerSearchModalProps {
 const playerService = {
   supabase: createClient(),
 
-  async searchPlayers(searchTerm: string): Promise<Player[]> {
+  async searchPlayers(
+    searchTerm: string
+  ): Promise<
+    (Player & { active_visit?: { id: string; casino_id: string | null } })[]
+  > {
     const { data, error } = await this.supabase
       .from("player")
-      .select("*")
+      .select(
+        `
+        *,
+        visit(
+          id,
+          casino_id,
+          check_out_date
+        )
+      `
+      )
       .or(
         `name.ilike.%${searchTerm}%,phone_number.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`
       )
+      .is("visit.check_out_date", null)
       .limit(10);
-
+    console.log("data", data);
     if (error) throw new Error(`Error searching players: ${error.message}`);
-    return data || [];
+
+    // Transform the response to include active_visit info
+    return (data || []).map((player) => ({
+      ...player,
+      active_visit: player.visit?.[0]
+        ? {
+            id: player.visit[0].id,
+            casino_id: player.visit[0].casino_id,
+          }
+        : undefined,
+    }));
   },
 
   async createVisit(playerId: string, casinoId: string) {
@@ -69,7 +95,6 @@ const playerService = {
     const { data: openSeats, error } = await this.supabase
       .from("open_seats_by_table")
       .select("gaming_table_id, table_name, open_seat_numbers, casino_id");
-
     if (error)
       throw new Error(`Error fetching available seats: ${error.message}`);
 
@@ -187,7 +212,7 @@ export function PlayerSearchModal({
         return;
       }
 
-      await playerService.createVisit(player.id, selectedCasino);
+      // await playerService.createVisit(player.id, selectedCasino);
       onPlayerSelected(player, action);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -197,13 +222,17 @@ export function PlayerSearchModal({
   const handleSeatSelection = async (seat: TableSeat) => {
     if (!selectedPlayer) return;
     setError(null);
-
+    console.log("selectedPlayerddd", selectedPlayer);
+    var visit = selectedPlayer.active_visit?.id;
     try {
-      const visit = await playerService.createVisit(
-        selectedPlayer.id,
-        selectedCasino!
-      );
-      await startRating(visit.id, seat.table_id, seat.seat_number, 0, {});
+      if (!visit) {
+        const visitData = await playerService.createVisit(
+          selectedPlayer.id,
+          selectedCasino!
+        );
+        visit = visitData.id;
+      }
+      await startRating(visit, seat.table_id, seat.seat_number, 0, {});
 
       setShowSeatSelector(false);
       onPlayerSelected(selectedPlayer, "seat", {
@@ -252,11 +281,14 @@ export function PlayerSearchModal({
           player={selectedPlayer}
           preSelectedSeat={preSelectedSeat}
           onVisit={() => handleAction(selectedPlayer, "visit")}
-          onSeat={() =>
-            preSelectedSeat
-              ? handleSeatSelection(preSelectedSeat)
-              : handleAction(selectedPlayer, "seat")
-          }
+          onSeat={() => {
+            console.log("preSelectedSeat", preSelectedSeat, selectedPlayer);
+            if (preSelectedSeat) {
+              handleSeatSelection(preSelectedSeat);
+            } else {
+              handleAction(selectedPlayer, "seat");
+            }
+          }}
           onDeselect={() => setSelectedPlayer(null)}
         />
       )}

@@ -34,7 +34,7 @@ export function CasinoFloorView({
   const supabase = createClient();
 
   const [isLoading, setIsLoading] = useState(true);
-
+  console.log("selectedCasino", selectedCasino);
   useEffect(() => {
     async function fetchData() {
       // console.log("fetching data");
@@ -42,8 +42,8 @@ export function CasinoFloorView({
         // Fetch tables
         const { data: tableData, error: tableError } = await supabase
           .from("activetablesandsettings")
-          .select("*")
-          .eq("casino_id", selectedCasino!);
+          .select("*");
+        // .eq("casino_id", selectedCasino!);
 
         if (tableError) {
           console.error("Error fetching tables:", tableError);
@@ -64,7 +64,7 @@ export function CasinoFloorView({
           `
           )
           .is("end_time", null);
-
+        console.log("slipData", slipData);
         if (slipError) {
           console.error("Error fetching rating slips:", slipError);
           return;
@@ -186,7 +186,7 @@ export function CasinoFloorView({
               <CasinoTable
                 key={table.gaming_table_id}
                 table={{
-                  name: `${table.table_name ?? ""} - ${table.settings_name ?? ""}`,
+                  name: `${table.table_name ?? ""}`,
                   id: table.gaming_table_id ?? "",
                   seats: Array.from(
                     { length: Number(table.seats_available ?? 0) },
