@@ -10,6 +10,7 @@ type RatingSlip = Database["public"]["Tables"]["ratingslip"]["Row"] & {
   visit?: {
     player?: {
       name: string;
+      id: string;
     };
   };
 };
@@ -19,7 +20,11 @@ interface SeatProps {
   player: Player | null;
   occupiedBy?: RatingSlip;
   onSeatPlayer: (seatNumber: number) => void;
-  onMovePlayer?: (ratingSlipId: string, newSeatNumber: number) => void;
+  onMovePlayer?: (
+    ratingSlipId: string,
+    newSeatNumber: number,
+    playerId: string
+  ) => void;
   tableId: string;
 }
 
@@ -28,6 +33,7 @@ interface DragItem {
   ratingSlipId: string;
   tableId: string;
   seatNumber: number;
+  playerId: string;
 }
 
 export function TableSeat({
@@ -50,6 +56,7 @@ export function TableSeat({
             ratingSlipId: occupiedBy.id,
             tableId: tableId,
             seatNumber: seatNumber,
+            playerId: occupiedBy.visit?.player?.id,
           }
         : null,
       collect: (monitor) => ({
@@ -67,7 +74,7 @@ export function TableSeat({
       canDrop: (item: DragItem) => !occupiedBy && item.tableId === tableId,
       drop: (item: DragItem) => {
         if (onMovePlayer) {
-          onMovePlayer(item.ratingSlipId, seatNumber);
+          onMovePlayer(item.ratingSlipId, seatNumber, item.playerId);
         }
       },
       collect: (monitor) => ({

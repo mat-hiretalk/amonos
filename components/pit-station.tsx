@@ -99,7 +99,7 @@ export default function PitStation({ casino }: PitStationProps) {
         .eq("casino_id", casino.id)
         .is("check_out_date", null)
         .order("check_in_date", { ascending: false });
-      console.log("visits", data);
+
       if (error) {
         console.error("Error fetching visits:", error);
         return;
@@ -212,21 +212,16 @@ export default function PitStation({ casino }: PitStationProps) {
                   preSelectedSeat={selectedSeat}
                   onPlayerSelected={async (player, action, seatInfo) => {
                     if (action === "visit") {
-                      // Handle visit action if needed
-                      console.log("Player visit:", player);
                     } else if (action === "seat" && seatInfo) {
-                      const visitId = player.active_visit?.id;
-                      if (visitId) {
-                        await startRating(
-                          visitId,
-                          seatInfo.table_id,
-                          seatInfo.seat_number,
-                          0,
-                          {}
-                        );
-                      } else {
-                        console.error("No active visit ID found for player");
-                      }
+                      await startRating(
+                        player.id,
+                        casino.id,
+                        seatInfo.table_id,
+                        seatInfo.seat_number,
+                        0,
+                        {}
+                      );
+
                       // Handle seating the player
                       setActiveTab("floor");
                       setSelectedSeat(undefined);

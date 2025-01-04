@@ -21,7 +21,7 @@ export type TableSeat = {
 };
 
 interface CasinoFloorViewProps {
-  selectedCasino: string | null;
+  selectedCasino: string;
   onSeatSelect: (seat: TableSeat) => void;
 }
 
@@ -34,10 +34,9 @@ export function CasinoFloorView({
   const supabase = createClient();
 
   const [isLoading, setIsLoading] = useState(true);
-  console.log("selectedCasino", selectedCasino);
+
   useEffect(() => {
     async function fetchData() {
-      // console.log("fetching data");
       try {
         // Fetch tables
         const { data: tableData, error: tableError } = await supabase
@@ -58,13 +57,14 @@ export function CasinoFloorView({
             *,
             visit:visit_id (
               player:player_id (
-                name
+                name,
+                id
               )
             )
           `
           )
           .is("end_time", null);
-        console.log("slipData", slipData);
+
         if (slipError) {
           console.error("Error fetching rating slips:", slipError);
           return;
@@ -117,54 +117,49 @@ export function CasinoFloorView({
     playerId: string,
     seatNumber: number
   ) => {
-    const { data: visitData, error: visitError } = await supabase
-      .from("visit")
-      .select("id")
-      .eq("player_id", playerId)
-      .is("check_out_date", null)
-      .single();
+    const newSlip = await startRating(
+      playerId,
+      selectedCasino,
+      updatedTable.id,
+      seatNumber,
+      0,
+      {}
+    );
 
-    if (visitError) {
-      console.error("Error finding active visit:", visitError);
-      return;
-    }
-
-    const { error: ratingError } = await supabase.from("ratingslip").insert({
-      gaming_table_id: updatedTable.id,
-      visit_id: visitData.id,
-      start_time: new Date().toISOString(),
-      average_bet: 0,
-      seat_number: seatNumber,
-      game_settings: {},
-    });
-
-    if (ratingError) {
-      console.error("Error creating rating slip:", ratingError);
-    }
+    // const { error: ratingError } = await supabase.from("ratingslip").insert({
+    //   gaming_table_id: updatedTable.id,
+    //   visit_id: visitData.id,
+    //   start_time: new Date().toISOString(),
+    //   average_bet: 0,
+    //   seat_number: seatNumber,
+    //   game_settings: {},
+    // });
   };
 
   const handleMovePlayer = async (
     ratingSlipId: string,
+    playerId: string,
     newTableId: string,
     newSeatNumber: number
   ) => {
     // End the current rating slip
     const stoppedRatingSlip = await stopRating(ratingSlipId);
 
-    if (!stoppedRatingSlip.oldSlip || !stoppedRatingSlip.oldSlip.visit_id) {
+    if (!stoppedRatingSlip.oldSlip) {
       console.error("Error stopping rating slip:", ratingSlipId);
       return;
     }
 
     // Create a new rating slip for the new position
     const newSlip = await startRating(
-      stoppedRatingSlip.oldSlip.visit_id,
+      playerId,
+      selectedCasino,
       newTableId,
       newSeatNumber,
       stoppedRatingSlip.oldSlip.average_bet,
       stoppedRatingSlip.oldSlip.game_settings
     );
-    console.log("new slip", newSlip);
+
     if (!newSlip.ratingSlip) {
       console.error(
         "Error creating new rating slip:",

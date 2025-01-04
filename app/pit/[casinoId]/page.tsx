@@ -4,7 +4,13 @@ import {
   getSelectedCasinoId,
 } from "@/app/actions/switch-casinos";
 
-const PitPage = async ({ params }: { params: { casinoId: string } }) => {
+type Params = {
+  params: Promise<{
+    casinoId: string;
+  }>;
+};
+
+const PitPage = async ({ params }: Params) => {
   const { casinoId } = await params;
   if (!casinoId) {
     return <div>No casino selected</div>;

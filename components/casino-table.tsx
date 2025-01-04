@@ -16,6 +16,7 @@ type RatingSlip = Database["public"]["Tables"]["ratingslip"]["Row"] & {
   visit?: {
     player?: {
       name: string;
+      id: string;
     };
   };
 };
@@ -41,6 +42,7 @@ interface CasinoTableProps {
   selectedCasino: string | null;
   onMovePlayer: (
     ratingSlipId: string,
+    playerId: string,
     newTableId: string,
     newSeatNumber: number
   ) => void;
@@ -59,7 +61,6 @@ export function CasinoTable({
   };
 
   const handlePlayerSelected = (player: Player) => {
-    console.log("handlePlayerSelected", player, selectedSeat);
     if (selectedSeat === null) return;
 
     const updatedSeats = [...table.seats];
@@ -75,8 +76,12 @@ export function CasinoTable({
     setSelectedSeat(null);
   };
 
-  const handleMovePlayer = (ratingSlipId: string, newSeatNumber: number) => {
-    onMovePlayer(ratingSlipId, table.id, newSeatNumber);
+  const handleMovePlayer = (
+    ratingSlipId: string,
+    newSeatNumber: number,
+    playerId: string
+  ) => {
+    onMovePlayer(ratingSlipId, playerId, table.id, newSeatNumber);
   };
 
   const getElapsedTime = (startTime: string) => {
@@ -118,6 +123,7 @@ export function CasinoTable({
         <div className="grid grid-cols-3 gap-2">
           {table.seats.map((player, index) => {
             const seatNumber = index + 1;
+
             return (
               <TableSeat
                 key={index}

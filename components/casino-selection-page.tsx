@@ -38,7 +38,7 @@ export function CasinoSelectionPage({}: CasinoSelectionPageProps) {
 
   const handleCasinoSelect = async (casinoId: string) => {
     await switchCasinos(casinoId);
-    console.log("Casino changed:", casinoId);
+
     router.push(`/pit/${casinoId}`);
   };
 

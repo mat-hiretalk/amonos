@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { startRating } from "@/app/actions/start-rating";
+import { createVisit, startRating } from "@/app/actions/start-rating";
 import { Casino } from "@/app/actions/switch-casinos";
 
 // Types
@@ -60,7 +60,7 @@ const playerService = {
       )
       .is("visit.check_out_date", null)
       .limit(10);
-    console.log("data", data);
+
     if (error) throw new Error(`Error searching players: ${error.message}`);
 
     // Transform the response to include active_visit info
@@ -73,22 +73,6 @@ const playerService = {
           }
         : undefined,
     }));
-  },
-
-  async createVisit(playerId: string, casinoId: string) {
-    const { data, error } = await this.supabase
-      .from("visit")
-      .insert([
-        {
-          player_id: playerId,
-          casino_id: casinoId,
-          check_in_date: new Date().toISOString(),
-        },
-      ])
-      .select();
-
-    if (error) throw new Error(`Error creating visit: ${error.message}`);
-    return data[0];
   },
 
   async fetchAvailableSeats(): Promise<TableSeat[]> {
@@ -222,17 +206,7 @@ export function PlayerSearchModal({
   const handleSeatSelection = async (seat: TableSeat) => {
     if (!selectedPlayer) return;
     setError(null);
-    console.log("selectedPlayerddd", selectedPlayer);
-    var visit = selectedPlayer.active_visit?.id;
     try {
-      if (!visit) {
-        const visitData = await playerService.createVisit(
-          selectedPlayer.id,
-          selectedCasino!
-        );
-        visit = visitData.id;
-      }
-
       setShowSeatSelector(false);
       onPlayerSelected(selectedPlayer, "seat", {
         table_id: seat.table_id,
@@ -281,7 +255,6 @@ export function PlayerSearchModal({
           preSelectedSeat={preSelectedSeat}
           onVisit={() => handleAction(selectedPlayer, "visit")}
           onSeat={() => {
-            console.log("preSelectedSeat", preSelectedSeat, selectedPlayer);
             if (preSelectedSeat) {
               handleSeatSelection(preSelectedSeat);
             } else {
