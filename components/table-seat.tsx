@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Database } from "@/database.types";
 import { User, UserPlus, DollarSign } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { RatingSlipModal } from "./rating-slip-modal";
 import { useDrag, useDrop } from "react-dnd";
+import { calculatePoints, GameSettings } from "@/utils/points";
 
 type Player = Database["public"]["Tables"]["player"]["Row"];
 type RatingSlip = Database["public"]["Tables"]["ratingslip"]["Row"] & {
@@ -26,6 +27,7 @@ interface SeatProps {
     playerId: string
   ) => void;
   tableId: string;
+  gameSettings: GameSettings;
 }
 
 interface DragItem {
@@ -43,8 +45,26 @@ export function TableSeat({
   onSeatPlayer,
   onMovePlayer,
   tableId,
+  gameSettings,
 }: SeatProps) {
   const [isRatingSlipOpen, setIsRatingSlipOpen] = useState(false);
+  const [currentPoints, setCurrentPoints] = useState(0);
+
+  useEffect(() => {
+    if (occupiedBy) {
+      const interval = setInterval(() => {
+        const points = calculatePoints(
+          gameSettings,
+          occupiedBy.average_bet,
+          occupiedBy.start_time,
+          new Date().toISOString()
+        );
+        setCurrentPoints(points);
+      }, 1000);
+
+      return () => clearInterval(interval);
+    }
+  }, [occupiedBy, gameSettings]);
 
   // Set up drag source for occupied seats
   const [{ isDragging }, drag] = useDrag(
@@ -95,14 +115,16 @@ export function TableSeat({
           }}
           className={`flex items-center justify-between p-2 bg-secondary rounded-md cursor-move hover:bg-secondary/80 ${
             isDragging ? "opacity-50" : ""
-          }`}
+          } ${occupiedBy.average_bet === 0 ? "animate-slow-blink" : ""}`}
           onClick={() => setIsRatingSlipOpen(true)}
         >
           <div className="flex items-center space-x-2">
             <User className="h-4 w-4" />
             <div className="text-sm">
               <p className="font-medium">{occupiedBy?.visit?.player?.name}</p>
-              <p className="text-muted-foreground text-xs">Active Player</p>
+              <p className="text-muted-foreground text-xs">
+                points: {currentPoints.toFixed(0)}
+              </p>
             </div>
           </div>
           <div className="flex items-center space-x-1">

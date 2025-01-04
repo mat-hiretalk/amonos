@@ -11,6 +11,7 @@ import { DollarSign, Star, Users, Clock } from "lucide-react";
 import { TableSeat } from "./table-seat";
 import { PlayerSearchModal } from "./player-search-modal";
 import { Database } from "@/database.types";
+import { GameSettings } from "@/utils/points";
 
 type RatingSlip = Database["public"]["Tables"]["ratingslip"]["Row"] & {
   visit?: {
@@ -34,6 +35,7 @@ export interface TableData {
 
 interface CasinoTableProps {
   table: TableData;
+  gameSettings: GameSettings;
   onUpdateTable: (
     updatedTable: TableData,
     playerId: string,
@@ -53,6 +55,7 @@ export function CasinoTable({
   onUpdateTable,
   selectedCasino,
   onMovePlayer,
+  gameSettings,
 }: CasinoTableProps) {
   const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
 
@@ -135,6 +138,7 @@ export function CasinoTable({
                 onSeatPlayer={handleSeatPlayer}
                 onMovePlayer={handleMovePlayer}
                 tableId={table.id}
+                gameSettings={gameSettings}
               />
             );
           })}

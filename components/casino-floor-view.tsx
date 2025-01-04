@@ -8,6 +8,10 @@ import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { stopRating } from "@/app/actions/stop-rating";
 import { startRating } from "@/app/actions/start-rating";
+import {
+  activeTableSettingsToGameSettings,
+  GameSettings,
+} from "@/utils/points";
 
 type GamingTable =
   Database["public"]["Views"]["activetablesandsettings"]["Row"];
@@ -172,6 +176,8 @@ export function CasinoFloorView({
     <DndProvider backend={HTML5Backend}>
       <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-[2048px] mx-auto">
         {tables.map((table) => {
+          console.log("table", table);
+          const gameSettings = activeTableSettingsToGameSettings(table);
           const tableRatingSlips = ratingSlips.filter(
             (slip) => slip.gaming_table_id === table.gaming_table_id
           );
@@ -196,6 +202,7 @@ export function CasinoFloorView({
                   hasVIP: false,
                   ratingSlips: tableRatingSlips,
                 }}
+                gameSettings={gameSettings}
                 selectedCasino={table.casino_id}
                 onUpdateTable={handleUpdateTable}
                 onMovePlayer={handleMovePlayer}

@@ -1,22 +1,54 @@
 "use server";
 
+import {
+  activeTableSettingsToGameSettings,
+  calculatePoints,
+} from "@/utils/points";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 
 export async function stopRating(ratingSlipId: string) {
   const supabase = await createClient();
 
-  const { error, data } = await supabase
+  const { data: ratingSlip } = await supabase
     .from("ratingslip")
-    .update({ end_time: new Date().toISOString() })
+    .select("*")
     .eq("id", ratingSlipId)
-    .select("*");
+    .single();
+  if (!ratingSlip || !ratingSlip.gaming_table_id) {
+    throw new Error("Rating slip or gaming table ID not found");
+  }
+  const { data: tableSettings } = await supabase
+    .from("activetablesandsettings")
+    .select("*")
+    .eq("gaming_table_id", ratingSlip.gaming_table_id)
+    .single();
+  if (!tableSettings) {
+    throw new Error("Table settings not found");
+  }
+
+  const gameSettings = activeTableSettingsToGameSettings(tableSettings);
+  const points = calculatePoints(
+    gameSettings,
+    ratingSlip.average_bet,
+    ratingSlip.start_time,
+    new Date().toISOString()
+  );
+  const { error, data: closedRatingSlip } = await supabase
+    .from("ratingslip")
+    .update({
+      end_time: new Date().toISOString(),
+      points_earned: points,
+    })
+    .eq("id", ratingSlipId)
+    .select("*")
+    .single();
 
   if (error) {
     throw new Error(`Error stopping rating: ${error.message}`);
   }
 
-  return { success: true, oldSlip: data[0] };
+  return { success: true, oldSlip: closedRatingSlip };
 }
 
 export const stopRatingByVisitId = async (visitId: string) => {
