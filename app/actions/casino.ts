@@ -65,6 +65,7 @@ export async function fetchCasinoTables(casinoId: string) {
 
 export async function fetchActiveRatingSlips() {
   try {
+    console.log("Fetching active rating slips...");
     const ratingSlips = await prisma.ratingslip.findMany({
       where: {
         end_time: null,
@@ -80,8 +81,16 @@ export async function fetchActiveRatingSlips() {
             },
           },
         },
+        player: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
       },
     });
+
+    console.log("Raw rating slips from DB:", ratingSlips);
 
     return ratingSlips.map((slip) => ({
       id: slip.id,
@@ -95,8 +104,12 @@ export async function fetchActiveRatingSlips() {
       start_time: slip.start_time.toISOString(),
       end_time: slip.end_time?.toISOString() || null,
       game_settings: slip.game_settings,
-      playerName: `${slip.visit?.player?.firstName || ""} ${slip.visit?.player?.lastName || ""}`.trim(),
+      playerName: slip.player ? `${slip.player.firstName} ${slip.player.lastName}` : 
+                 (slip.visit?.player ? `${slip.visit.player.firstName} ${slip.visit.player.lastName}` : "Unknown Player"),
       playerId: slip.playerId,
+      visit: {
+        player: slip.visit?.player || slip.player
+      }
     }));
   } catch (error) {
     console.error("Error fetching active rating slips:", error);
@@ -116,6 +129,23 @@ export async function updateTableCasinoId(tableId: string, casinoId: string) {
     throw error;
   }
 }
+//Move Player action
+export async function movePlayer(ratingSlipId: string, newTableId: string, newSeatNumber: number) {
+    try {
+      const updatedRatingSlip = await prisma.ratingslip.update({
+        where: { id: ratingSlipId },
+        data: {
+          gaming_table_id: newTableId,
+          seat_number: newSeatNumber,
+        },
+      })
+  
+      return updatedRatingSlip
+    } catch (error) {
+      console.error("Error moving player:", error)
+      throw error
+    }
+  }
 
 export async function createRatingSlip(
   tableId: string,
@@ -238,4 +268,5 @@ export async function createRatingSlip(
     console.error("Error creating rating slip:", error);
     throw error;
   }
+ 
 } 

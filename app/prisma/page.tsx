@@ -1,5 +1,5 @@
 import prisma from "@/lib/prisma";
-import Database from '@/database.types'
+import { Database } from "@/database.types";
 export default async function Prisma(): Promise<JSX.Element> {
   "use server";
   let players = await prisma?.player.findMany();
@@ -23,13 +23,10 @@ export default async function Prisma(): Promise<JSX.Element> {
       <ul>
         {players?.map((player) => (
           <li key={player.id}>
-            <strong className="text-sky-400/50 underline-offset-2">
-              Name:
-            </strong>{" "}
-            {player.firstName} <br />
-            <strong className="text-orange-400">Last Name:</strong>{" "}
-            {player.lastName} <br />
-            <strong>Email:</strong> {player.ratingslipId} <br />
+            <strong>Name: {player.firstName}</strong>
+            <p>Email: {player.email}</p>
+            <p>Phone: {player.phone_number}</p>
+            <p>DOB: {player.dob?.toString()}</p>
           </li>
         ))}
       </ul>
@@ -43,7 +40,10 @@ export default async function Prisma(): Promise<JSX.Element> {
       <ul>
         {ratingSlips.map((slip) => (
           <li key={slip.id}>
-            <strong> Player Name From the slip': {slip.player?.firstName}</strong>
+            <strong>
+              {" "}
+              Player Name From the slip': {slip.player?.firstName}
+            </strong>
           </li>
         ))}
       </ul>

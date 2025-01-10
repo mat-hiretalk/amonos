@@ -82,7 +82,7 @@ export default function PitStation() {
         .eq("casino_id", selectedCasino)
         .is("check_out_date", null)
         .order("check_in_date", { ascending: false });
-      console.log(data);
+      console.log("Data from pit station from visit", data);
       if (error) {
         console.error("Error fetching visits:", error);
         return;
@@ -92,10 +92,10 @@ export default function PitStation() {
         ...visit,
         player: Array.isArray(visit.player) ? visit.player[0] : visit.player,
       }));
-
+      console.log("formatted data", formattedData);
       setActiveVisits(formattedData);
     };
-
+    console.log("acitve vistits form the pit", activeVisits);
     fetchActiveVisits();
 
     // Subscribe to changes in visits
@@ -192,7 +192,7 @@ export default function PitStation() {
                   selectedCasino={selectedCasino}
                   mode="visit"
                   onPlayerSelected={(player) => {
-                    // Handle player selection for visit mode
+                    //  TODO: Handle player selection for visit mode
                     console.log("Selected player:", player);
                   }}
                 />
@@ -223,6 +223,7 @@ export default function PitStation() {
                 </TableHeader>
                 <TableBody>
                   {activeVisits.map((visit) => {
+                    console.log("Visit map from pit station", visit);
                     const duration =
                       new Date().getTime() -
                       new Date(visit.check_in_date).getTime();
@@ -253,7 +254,13 @@ export default function PitStation() {
             </TabsContent>
 
             <TabsContent value="floor">
-              <CasinoFloorView />
+              {selectedCasino ? (
+                <CasinoFloorView casinoId={selectedCasino} />
+              ) : (
+                <div className="text-center py-4">
+                  Please select a casino first
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </div>
@@ -287,7 +294,9 @@ export default function PitStation() {
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <label className="text-sm font-medium">Table</label>
-                            <div className="mt-1">{selectedPlayer.gamingtable}</div>
+                            <div className="mt-1">
+                              {selectedPlayer.gamingtable}
+                            </div>
                           </div>
                           <div>
                             <label className="text-sm font-medium">Seat</label>

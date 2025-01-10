@@ -14,7 +14,7 @@ export async function searchPlayers(searchTerm: string) {
         ],
       },
       include: {
-        ratingslip: true,
+        ratingslips: true,
       },
       take: 10,
     });
@@ -27,7 +27,7 @@ export async function searchPlayers(searchTerm: string) {
       phone_number: player.phone_number,
       dob: player.dob?.toISOString() || null,
       company_id: player.company_id,
-      ratingslipId: player.ratingslip?.id || null,
+      ratingslipId: player.ratingslips[0]?.id || null,
     }));
   } catch (error) {
     console.error("Error searching players:", error);

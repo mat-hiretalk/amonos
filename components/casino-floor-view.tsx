@@ -10,6 +10,7 @@ import {
   type TableWithSettings,
   type RatingSlipWithPlayer,
 } from "@/app/actions/casino";
+import { createClient } from "@/utils/supabase/client";
 
 interface CasinoFloorViewProps {
   casinoId: string;
@@ -18,28 +19,77 @@ interface CasinoFloorViewProps {
 export function CasinoFloorView({ casinoId }: CasinoFloorViewProps) {
   const [tables, setTables] = useState<TableWithSettings[]>([]);
   const [ratingSlips, setRatingSlips] = useState<RatingSlipWithPlayer[]>([]);
+  const supabase = createClient();
 
   useEffect(() => {
-    async function fetchData() {
+    let isMounted = true;
+
+    async function fetchInitialData() {
       try {
+        console.log("Fetching initial casino floor data...");
         const [tablesData, slipsData] = await Promise.all([
           fetchCasinoTables(casinoId),
           fetchActiveRatingSlips(),
         ]);
 
+        if (!isMounted) return;
+
+        console.log("Initial tables data:", tablesData);
+        console.log("Initial rating slips:", slipsData);
+
         setTables(tablesData);
         setRatingSlips(slipsData);
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Error fetching initial data:", error);
       }
     }
 
-    fetchData();
+    // Set up Supabase real-time subscriptions
+    const ratingSlipsSubscription = supabase
+      .channel("rating-slips-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "ratingslip",
+        },
+        async () => {
+          console.log("Rating slip change detected, fetching latest data...");
+          const newSlipsData = await fetchActiveRatingSlips();
+          if (isMounted) {
+            setRatingSlips(newSlipsData);
+          }
+        }
+      )
+      .subscribe();
 
-    // Set up polling for updates
-    const intervalId = setInterval(fetchData, 5000);
+    const tablesSubscription = supabase
+      .channel("tables-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "gamingtable",
+        },
+        async () => {
+          console.log("Gaming table change detected, fetching latest data...");
+          const newTablesData = await fetchCasinoTables(casinoId);
+          if (isMounted) {
+            setTables(newTablesData);
+          }
+        }
+      )
+      .subscribe();
 
-    return () => clearInterval(intervalId);
+    fetchInitialData();
+
+    return () => {
+      isMounted = false;
+      ratingSlipsSubscription.unsubscribe();
+      tablesSubscription.unsubscribe();
+    };
   }, [casinoId]);
 
   const handleUpdateTable = async (
@@ -56,13 +106,7 @@ export function CasinoFloorView({ casinoId }: CasinoFloorViewProps) {
       });
 
       await createRatingSlip(updatedTable.id, playerId, seatNumber, casinoId);
-      // Refresh data after creating a new rating slip
-      const [tablesData, slipsData] = await Promise.all([
-        fetchCasinoTables(casinoId),
-        fetchActiveRatingSlips(),
-      ]);
-      setTables(tablesData);
-      setRatingSlips(slipsData);
+      // No need to manually fetch data here as Supabase subscriptions will handle updates
     } catch (error) {
       console.error("Error updating table:", error);
     }
@@ -97,6 +141,10 @@ export function CasinoFloorView({ casinoId }: CasinoFloorViewProps) {
               }}
               selectedCasino={table.casino_id}
               onUpdateTable={handleUpdateTable}
+              tables={tables.map((t) => ({
+                id: t.gaming_table_id,
+                name: t.table_name,
+              }))}
             />
           </div>
         );

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -15,7 +15,8 @@ import { Database } from "@/database.types";
 type RatingSlip = Database["public"]["Tables"]["ratingslip"]["Row"] & {
   visit?: {
     player?: {
-      name: string;
+      firstName: string;
+      lastName: string;
     };
   };
 };
@@ -39,12 +40,14 @@ interface CasinoTableProps {
     seatNumber: number
   ) => void;
   selectedCasino: string | null;
+  tables: { id: string; name: string }[];
 }
 
 export default function CasinoTable({
   table,
   onUpdateTable,
   selectedCasino,
+  tables,
 }: CasinoTableProps) {
   const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
 
@@ -75,6 +78,26 @@ export default function CasinoTable({
     return diff < 60 ? `${diff}m` : `${Math.floor(diff / 60)}h ${diff % 60}m`;
   };
 
+  const tableSeats = useMemo(() => {
+    return table.seats.map((player, index) => {
+      const seatNumber = index + 1;
+      const occupiedBy = table.ratingSlips.find(
+        (slip) => slip.seat_number === seatNumber
+      );
+
+      return (
+        <TableSeat
+          key={`${table.id}-${seatNumber}`}
+          seatNumber={seatNumber}
+          player={player}
+          occupiedBy={occupiedBy}
+          onSeatPlayer={handleSeatPlayer}
+          tables={tables}
+        />
+      );
+    });
+  }, [table.id, table.seats, table.ratingSlips, tables, handleSeatPlayer]);
+
   return (
     <Card
       className={
@@ -102,22 +125,7 @@ export default function CasinoTable({
           </Badge>
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
-          {table.seats.map((player, index) => {
-            const seatNumber = index + 1;
-            return (
-              <TableSeat
-                key={index}
-                seatNumber={seatNumber}
-                player={player}
-                occupiedBy={table.ratingSlips.find((slip) => {
-                  return slip.seat_number === seatNumber;
-                })}
-                onSeatPlayer={handleSeatPlayer}
-              />
-            );
-          })}
-        </div>
+        <div className="grid grid-cols-3 gap-2">{tableSeats}</div>
       </CardContent>
 
       <Dialog

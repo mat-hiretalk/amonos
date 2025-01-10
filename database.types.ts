@@ -229,7 +229,6 @@ export type Database = {
           id: string
           lastName: string
           phone_number: string | null
-          ratingslipId: string | null
         }
         Insert: {
           company_id?: string | null
@@ -239,7 +238,6 @@ export type Database = {
           id?: string
           lastName: string
           phone_number?: string | null
-          ratingslipId?: string | null
         }
         Update: {
           company_id?: string | null
@@ -249,7 +247,6 @@ export type Database = {
           id?: string
           lastName?: string
           phone_number?: string | null
-          ratingslipId?: string | null
         }
         Relationships: [
           {
@@ -257,13 +254,6 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "company"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "player_ratingslipId_fkey"
-            columns: ["ratingslipId"]
-            isOneToOne: false
-            referencedRelation: "ratingslip"
             referencedColumns: ["id"]
           },
         ]
@@ -351,7 +341,7 @@ export type Database = {
           end_time?: string | null
           game_settings: Json
           gaming_table_id?: string | null
-          id?: string
+          id: string
           playerId: string
           seat_number?: number | null
           start_time: string
@@ -377,6 +367,13 @@ export type Database = {
             columns: ["gaming_table_id"]
             isOneToOne: false
             referencedRelation: "gamingtable"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ratingslip_playerId_fkey"
+            columns: ["playerId"]
+            isOneToOne: false
+            referencedRelation: "player"
             referencedColumns: ["id"]
           },
           {
