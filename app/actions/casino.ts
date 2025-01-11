@@ -131,21 +131,55 @@ export async function updateTableCasinoId(tableId: string, casinoId: string) {
 }
 //Move Player action
 export async function movePlayer(ratingSlipId: string, newTableId: string, newSeatNumber: number) {
-    try {
-      const updatedRatingSlip = await prisma.ratingslip.update({
-        where: { id: ratingSlipId },
-        data: {
-          gaming_table_id: newTableId,
-          seat_number: newSeatNumber,
+  try {
+    const updatedRatingSlip = await prisma.ratingslip.update({
+      where: { id: ratingSlipId },
+      data: {
+        gaming_table_id: newTableId,
+        seat_number: newSeatNumber,
+      },
+      include: {
+        visit: {
+          include: {
+            player: {
+              select: {
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
         },
-      })
-  
-      return updatedRatingSlip
-    } catch (error) {
-      console.error("Error moving player:", error)
-      throw error
-    }
+        player: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+
+    // Serialize the response data
+    return {
+      id: updatedRatingSlip.id,
+      gaming_table_id: updatedRatingSlip.gaming_table_id,
+      visit_id: updatedRatingSlip.visit_id,
+      average_bet: Number(updatedRatingSlip.average_bet.toString()),
+      cash_in: updatedRatingSlip.cash_in ? Number(updatedRatingSlip.cash_in.toString()) : null,
+      chips_brought: updatedRatingSlip.chips_brought ? Number(updatedRatingSlip.chips_brought.toString()) : null,
+      chips_taken: updatedRatingSlip.chips_taken ? Number(updatedRatingSlip.chips_taken.toString()) : null,
+      seat_number: updatedRatingSlip.seat_number,
+      start_time: updatedRatingSlip.start_time.toISOString(),
+      end_time: updatedRatingSlip.end_time?.toISOString() || null,
+      game_settings: updatedRatingSlip.game_settings,
+      visit: {
+        player: updatedRatingSlip.visit?.player || updatedRatingSlip.player
+      }
+    };
+  } catch (error) {
+    console.error("Error moving player:", error);
+    throw error;
   }
+}
 
 export async function createRatingSlip(
   tableId: string,
