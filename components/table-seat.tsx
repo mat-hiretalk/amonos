@@ -1,11 +1,8 @@
+import React, { useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Database } from "@/database.types";
-import { User, UserPlus, DollarSign } from "lucide-react";
-import { useState, useEffect } from "react";
-
 import { RatingSlipModal } from "./rating-slip-modal";
+import { Database } from "@/database.types";
 
-type Player = Database["public"]["Tables"]["player"]["Row"];
 type RatingSlip = Database["public"]["Tables"]["ratingslip"]["Row"] & {
   visit?: {
     player?: {
@@ -15,10 +12,12 @@ type RatingSlip = Database["public"]["Tables"]["ratingslip"]["Row"] & {
   };
 };
 
-interface SeatProps {
+type Player = Database["public"]["Tables"]["player"]["Row"];
+
+interface TableSeatProps {
   seatNumber: number;
   player: Player | null;
-  occupiedBy?: RatingSlip;
+  occupiedBy: RatingSlip | undefined;
   onSeatPlayer: (seatNumber: number) => void;
   tables: { id: string; name: string }[];
 }
@@ -29,65 +28,60 @@ export function TableSeat({
   occupiedBy,
   onSeatPlayer,
   tables,
-}: SeatProps) {
-  const [isRatingSlipOpen, setIsRatingSlipOpen] = useState(false);
+}: TableSeatProps) {
+  const [showRatingSlip, setShowRatingSlip] = React.useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
+  // Example of using ref to focus the button when occupiedBy changes
   useEffect(() => {
-    console.log(
-      `TableSeat ${seatNumber} rendered with occupiedBy:`,
-      occupiedBy
-    );
-    return () => {
-      console.log(`TableSeat ${seatNumber} unmounting`);
-    };
-  }, [seatNumber, occupiedBy]);
+    if (occupiedBy && buttonRef.current) {
+      buttonRef.current.focus();
+    }
+  }, [occupiedBy]);
 
-  if (occupiedBy) {
-    return (
-      <>
-        <div
-          className="flex items-center justify-between p-2 bg-secondary rounded-md cursor-pointer hover:bg-secondary/80"
-          onClick={() => setIsRatingSlipOpen(true)}
-        >
-          <div className="flex items-center space-x-2">
-            <User className="h-4 w-4" />
-            <div className="text-sm">
-              <p className="font-medium">
-                {occupiedBy?.visit?.player
-                  ? `${occupiedBy.visit.player.firstName} ${occupiedBy.visit.player.lastName}`
-                  : "Unknown Player"}
-              </p>
-              <p className="text-muted-foreground text-xs">Active Player</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-1">
-            <DollarSign className="h-4 w-4" />
-            <span className="text-sm font-medium">
-              ${occupiedBy.average_bet}
-            </span>
-          </div>
-        </div>
-
-        {occupiedBy && (
-          <RatingSlipModal
-            ratingSlip={occupiedBy}
-            isOpen={isRatingSlipOpen}
-            onClose={() => setIsRatingSlipOpen(false)}
-            tables={tables}
-          />
-        )}
-      </>
-    );
-  }
+  const handleClick = () => {
+    if (occupiedBy) {
+      setShowRatingSlip(true);
+    } else {
+      onSeatPlayer(seatNumber);
+    }
+  };
 
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => onSeatPlayer(seatNumber)}
-    >
-      <UserPlus className="h-4 w-4 mr-2" />
-      Seat {seatNumber}
-    </Button>
+    <div>
+      <Button
+        ref={buttonRef}
+        variant={occupiedBy ? "default" : "outline"}
+        className="w-full h-24 relative"
+        onClick={handleClick}
+      >
+        <div className="absolute top-1 left-2 text-xs opacity-50">
+          Seat {seatNumber}
+        </div>
+        <div className="flex flex-col items-center justify-center">
+          {occupiedBy ? (
+            <>
+              <span className="font-bold">
+                {occupiedBy.visit?.player?.firstName || "Unknown"}
+              </span>
+              <span className="text-xs opacity-70">
+                ${occupiedBy.average_bet}
+              </span>
+            </>
+          ) : (
+            <span className="opacity-50">Empty</span>
+          )}
+        </div>
+      </Button>
+
+      {showRatingSlip && occupiedBy && (
+        <RatingSlipModal
+          ratingSlip={occupiedBy}
+          isOpen={showRatingSlip}
+          onClose={() => setShowRatingSlip(false)}
+          tables={tables}
+        />
+      )}
+    </div>
   );
 }
