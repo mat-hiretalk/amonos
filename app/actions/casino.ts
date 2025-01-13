@@ -307,3 +307,44 @@ export async function createRatingSlip(
   }
  
 } 
+
+export async function updateRatingSlipDetails(
+  ratingSlipId: string,
+  {
+    averageBet,
+    cashIn,
+    startTime,
+  }: {
+    averageBet: number;
+    cashIn: number;
+    startTime: string;
+  }
+) {
+  const updatedSlip = await prisma.ratingslip.update({
+    where: {
+      id: ratingSlipId,
+    },
+    data: {
+      average_bet: averageBet,
+      cash_in: cashIn,
+      start_time: startTime,
+    },
+    include: {
+      visit: {
+        include: {
+          player: true,
+        },
+      },
+    },
+  });
+
+  return {
+    ...updatedSlip,
+    average_bet: Number(updatedSlip.average_bet.toString()),
+    cash_in: updatedSlip.cash_in ? Number(updatedSlip.cash_in.toString()) : null,
+    chips_brought: updatedSlip.chips_brought ? Number(updatedSlip.chips_brought.toString()) : null,
+    chips_taken: updatedSlip.chips_taken ? Number(updatedSlip.chips_taken.toString()) : null,
+    start_time: updatedSlip.start_time.toISOString(),
+    end_time: updatedSlip.end_time?.toISOString() || null,
+  };
+} 

@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   fetchActiveRatingSlips, 
-  movePlayer, 
+  movePlayer,
+  updateRatingSlipDetails,
   type RatingSlipWithPlayer 
 } from '@/app/actions/casino';
 
@@ -23,10 +24,48 @@ export function useRatingSlips() {
       newTableId: string; 
       newSeatNumber: number; 
     }) => {
-      return movePlayer(ratingSlipId, newTableId, newSeatNumber);
+      const updatedSlip = await movePlayer(ratingSlipId, newTableId, newSeatNumber);
+      return {
+        ...updatedSlip,
+        playerName: updatedSlip.visit?.player 
+          ? `${updatedSlip.visit.player.firstName} ${updatedSlip.visit.player.lastName}`
+          : "Unknown Player",
+        playerId: ratingSlipId,
+      } as RatingSlipWithPlayer;
     },
     onSuccess: (updatedSlip) => {
-      // Update the cache optimistically
+      queryClient.setQueryData<RatingSlipWithPlayer[]>(['ratingSlips'], (old = []) => 
+        old.map(slip => slip.id === updatedSlip.id ? updatedSlip : slip)
+      );
+    },
+  });
+
+  const updateDetails = useMutation({
+    mutationFn: async ({
+      ratingSlipId,
+      averageBet,
+      cashIn,
+      startTime,
+    }: {
+      ratingSlipId: string;
+      averageBet: number;
+      cashIn: number;
+      startTime: string;
+    }) => {
+      const updatedSlip = await updateRatingSlipDetails(ratingSlipId, {
+        averageBet,
+        cashIn,
+        startTime,
+      });
+      return {
+        ...updatedSlip,
+        playerName: updatedSlip.visit?.player 
+          ? `${updatedSlip.visit.player.firstName} ${updatedSlip.visit.player.lastName}`
+          : "Unknown Player",
+        playerId: ratingSlipId,
+      } as RatingSlipWithPlayer;
+    },
+    onSuccess: (updatedSlip) => {
       queryClient.setQueryData<RatingSlipWithPlayer[]>(['ratingSlips'], (old = []) => 
         old.map(slip => slip.id === updatedSlip.id ? updatedSlip : slip)
       );
@@ -39,5 +78,7 @@ export function useRatingSlips() {
     error,
     updateRatingSlip: updateRatingSlip.mutate,
     isUpdating: updateRatingSlip.isPending,
+    updateDetails: updateDetails.mutate,
+    isUpdatingDetails: updateDetails.isPending,
   };
 } 

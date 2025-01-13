@@ -7,7 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { DollarSign, Star, Users, Clock } from "lucide-react";
+import { DollarSign, Star, Users, Clock, UserX } from "lucide-react";
 import { TableSeat } from "./table-seat";
 import { PlayerSearchModal } from "./player-search-modal";
 import { Database } from "@/database.types";
@@ -122,7 +122,7 @@ export default function CasinoTable({
             </span>
           </div>
           <div className="flex items-center space-x-2">
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <UserX className="h-4 w-4 text-muted-foreground" />
             <span className="text-xl font-bold">{table.averageBet}</span>
           </div>
           <Badge variant={table.status === "active" ? "default" : "secondary"}>
