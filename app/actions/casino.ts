@@ -90,9 +90,9 @@ export async function fetchActiveRatingSlips() {
       },
     });
 
-    console.log("Raw rating slips from DB:", ratingSlips);
+    console.log("Raw rating slips from DB:", JSON.stringify(ratingSlips, null, 2));
 
-    return ratingSlips.map((slip) => ({
+    const serializedSlips = ratingSlips.map((slip) => ({
       id: slip.id,
       gaming_table_id: slip.gaming_table_id,
       visit_id: slip.visit_id,
@@ -111,6 +111,9 @@ export async function fetchActiveRatingSlips() {
         player: slip.visit?.player || slip.player
       }
     }));
+
+    console.log("Serialized rating slips:", JSON.stringify(serializedSlips, null, 2));
+    return serializedSlips;
   } catch (error) {
     console.error("Error fetching active rating slips:", error);
     throw error;

@@ -54,11 +54,37 @@ export function CasinoFloorView({ casinoId }: CasinoFloorViewProps) {
           schema: "public",
           table: "ratingslip",
         },
-        async () => {
-          console.log("Rating slip change detected, fetching latest data...");
-          const newSlipsData = await fetchActiveRatingSlips();
-          if (isMounted) {
-            setRatingSlips(newSlipsData);
+        async (payload) => {
+          console.log("Rating slip change detected, payload:", payload);
+
+          // Handle different event types
+          if (payload.eventType === "INSERT") {
+            const newSlip = await fetchActiveRatingSlips();
+            setRatingSlips((prev) => [...prev, ...newSlip]);
+          } else if (payload.eventType === "UPDATE") {
+            setRatingSlips((prev) =>
+              prev.map((slip) =>
+                slip.id === payload.new.id
+                  ? {
+                      ...slip,
+                      average_bet: Number(payload.new.average_bet),
+                      cash_in: payload.new.cash_in
+                        ? Number(payload.new.cash_in)
+                        : null,
+                      chips_brought: payload.new.chips_brought
+                        ? Number(payload.new.chips_brought)
+                        : null,
+                      chips_taken: payload.new.chips_taken
+                        ? Number(payload.new.chips_taken)
+                        : null,
+                    }
+                  : slip
+              )
+            );
+          } else if (payload.eventType === "DELETE") {
+            setRatingSlips((prev) =>
+              prev.filter((slip) => slip.id !== payload.old.id)
+            );
           }
         }
       )
@@ -117,6 +143,11 @@ export function CasinoFloorView({ casinoId }: CasinoFloorViewProps) {
       {tables.map((table) => {
         const tableRatingSlips = ratingSlips.filter(
           (slip) => slip.gaming_table_id === table.gaming_table_id
+        );
+
+        console.log(
+          `Rating slips for table ${table.table_name}:`,
+          JSON.stringify(tableRatingSlips, null, 2)
         );
 
         return (

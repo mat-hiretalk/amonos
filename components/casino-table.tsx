@@ -85,6 +85,11 @@ export default function CasinoTable({
         (slip) => slip.seat_number === seatNumber
       );
 
+      console.log(
+        `Table ${table.name} Seat ${seatNumber} rating slip:`,
+        occupiedBy
+      );
+
       return (
         <TableSeat
           key={`${table.id}-${seatNumber}`}

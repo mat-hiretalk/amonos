@@ -1,7 +1,8 @@
-import React, { useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { RatingSlipModal } from "./rating-slip-modal";
 import { Database } from "@/database.types";
+import { User, DollarSign } from "lucide-react";
 
 type RatingSlip = Database["public"]["Tables"]["ratingslip"]["Row"] & {
   visit?: {
@@ -29,19 +30,18 @@ export function TableSeat({
   onSeatPlayer,
   tables,
 }: TableSeatProps) {
-  const [showRatingSlip, setShowRatingSlip] = React.useState(false);
-  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [isRatingSlipOpen, setIsRatingSlipOpen] = useState(false);
 
-  // Example of using ref to focus the button when occupiedBy changes
   useEffect(() => {
-    if (occupiedBy && buttonRef.current) {
-      buttonRef.current.focus();
-    }
-  }, [occupiedBy]);
+    console.log(
+      `TableSeat ${seatNumber} rendered with occupiedBy:`,
+      JSON.stringify(occupiedBy, null, 2)
+    );
+  }, [seatNumber, occupiedBy]);
 
   const handleClick = () => {
     if (occupiedBy) {
-      setShowRatingSlip(true);
+      setIsRatingSlipOpen(true);
     } else {
       onSeatPlayer(seatNumber);
     }
@@ -50,7 +50,6 @@ export function TableSeat({
   return (
     <div>
       <Button
-        ref={buttonRef}
         variant={occupiedBy ? "default" : "outline"}
         className="w-full h-24 relative"
         onClick={handleClick}
@@ -67,6 +66,9 @@ export function TableSeat({
               <span className="text-xs opacity-70">
                 ${occupiedBy.average_bet}
               </span>
+              <span className="text-xs opacity-70">
+                Cash In: ${occupiedBy.cash_in || 0}
+              </span>
             </>
           ) : (
             <span className="opacity-50">Empty</span>
@@ -74,11 +76,11 @@ export function TableSeat({
         </div>
       </Button>
 
-      {showRatingSlip && occupiedBy && (
+      {occupiedBy && (
         <RatingSlipModal
           ratingSlip={occupiedBy}
-          isOpen={showRatingSlip}
-          onClose={() => setShowRatingSlip(false)}
+          isOpen={isRatingSlipOpen}
+          onClose={() => setIsRatingSlipOpen(false)}
           tables={tables}
         />
       )}
