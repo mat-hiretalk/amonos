@@ -5,12 +5,12 @@ import CasinoTable from "./casino-table";
 import type { TableData } from "./casino-table";
 import {
   fetchCasinoTables,
-  fetchActiveRatingSlips,
   createRatingSlip,
   type TableWithSettings,
   type RatingSlipWithPlayer,
 } from "@/app/actions/casino";
 import { createClient } from "@/utils/supabase/client";
+import { useRatingSlips } from "@/hooks/useRatingSlips";
 
 interface CasinoFloorViewProps {
   casinoId: string;
@@ -18,7 +18,7 @@ interface CasinoFloorViewProps {
 
 export function CasinoFloorView({ casinoId }: CasinoFloorViewProps) {
   const [tables, setTables] = useState<TableWithSettings[]>([]);
-  const [ratingSlips, setRatingSlips] = useState<RatingSlipWithPlayer[]>([]);
+  const { ratingSlips, isLoading: isLoadingSlips } = useRatingSlips();
   const supabase = createClient();
 
   useEffect(() => {
@@ -27,69 +27,18 @@ export function CasinoFloorView({ casinoId }: CasinoFloorViewProps) {
     async function fetchInitialData() {
       try {
         console.log("Fetching initial casino floor data...");
-        const [tablesData, slipsData] = await Promise.all([
-          fetchCasinoTables(casinoId),
-          fetchActiveRatingSlips(),
-        ]);
+        const tablesData = await fetchCasinoTables(casinoId);
 
         if (!isMounted) return;
 
         console.log("Initial tables data:", tablesData);
-        console.log("Initial rating slips:", slipsData);
-
         setTables(tablesData);
-        setRatingSlips(slipsData);
       } catch (error) {
         console.error("Error fetching initial data:", error);
       }
     }
 
     // Set up Supabase real-time subscriptions
-    const ratingSlipsSubscription = supabase
-      .channel("rating-slips-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "ratingslip",
-        },
-        async (payload) => {
-          console.log("Rating slip change detected, payload:", payload);
-
-          // Handle different event types
-          if (payload.eventType === "INSERT") {
-            const newSlip = await fetchActiveRatingSlips();
-            setRatingSlips((prev) => [...prev, ...newSlip]);
-          } else if (payload.eventType === "UPDATE") {
-            setRatingSlips((prev) =>
-              prev.map((slip) =>
-                slip.id === payload.new.id
-                  ? {
-                      ...slip,
-                      average_bet: Number(payload.new.average_bet),
-                      cash_in: payload.new.cash_in
-                        ? Number(payload.new.cash_in)
-                        : null,
-                      chips_brought: payload.new.chips_brought
-                        ? Number(payload.new.chips_brought)
-                        : null,
-                      chips_taken: payload.new.chips_taken
-                        ? Number(payload.new.chips_taken)
-                        : null,
-                    }
-                  : slip
-              )
-            );
-          } else if (payload.eventType === "DELETE") {
-            setRatingSlips((prev) =>
-              prev.filter((slip) => slip.id !== payload.old.id)
-            );
-          }
-        }
-      )
-      .subscribe();
-
     const tablesSubscription = supabase
       .channel("tables-changes")
       .on(
@@ -113,7 +62,6 @@ export function CasinoFloorView({ casinoId }: CasinoFloorViewProps) {
 
     return () => {
       isMounted = false;
-      ratingSlipsSubscription.unsubscribe();
       tablesSubscription.unsubscribe();
     };
   }, [casinoId]);
@@ -132,17 +80,21 @@ export function CasinoFloorView({ casinoId }: CasinoFloorViewProps) {
       });
 
       await createRatingSlip(updatedTable.id, playerId, seatNumber, casinoId);
-      // No need to manually fetch data here as Supabase subscriptions will handle updates
     } catch (error) {
       console.error("Error updating table:", error);
     }
   };
 
+  if (isLoadingSlips) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-[2048px] mx-auto">
       {tables.map((table) => {
         const tableRatingSlips = ratingSlips.filter(
-          (slip) => slip.gaming_table_id === table.gaming_table_id
+          (slip: RatingSlipWithPlayer) =>
+            slip.gaming_table_id === table.gaming_table_id
         );
 
         console.log(
@@ -163,7 +115,8 @@ export function CasinoFloorView({ casinoId }: CasinoFloorViewProps) {
                 ),
                 averageBet:
                   tableRatingSlips.reduce(
-                    (sum, slip) => sum + slip.average_bet,
+                    (sum: number, slip: RatingSlipWithPlayer) =>
+                      sum + slip.average_bet,
                     0
                   ) / (tableRatingSlips.length || 1),
                 status: "active",
