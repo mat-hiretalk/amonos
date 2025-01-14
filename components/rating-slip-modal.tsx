@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useRatingSlips } from "@/hooks/useRatingSlips";
+import { useToast } from "@/hooks/use-toast";
 
 type RatingSlip = Database["public"]["Tables"]["ratingslip"]["Row"] & {
   visit?: {
@@ -44,16 +45,19 @@ export function RatingSlipModal({
 }: RatingSlipModalProps) {
   const { updateRatingSlip, isUpdating, updateDetails, isUpdatingDetails } =
     useRatingSlips();
+  const { toast } = useToast();
+
   const [averageBet, setAverageBet] = useState(
     ratingSlip.average_bet.toString()
   );
   const [startTime, setStartTime] = useState(ratingSlip.start_time || "");
   const [cashIn, setCashIn] = useState(ratingSlip.cash_in?.toString() || "0");
-  const [newTableId, setNewTableId] = useState("");
+  const [newTableId, setNewTableId] = useState(
+    ratingSlip.gaming_table_id || ""
+  );
   const [newSeatNumber, setNewSeatNumber] = useState(
     ratingSlip.seat_number?.toString() || ""
   );
-  const [isSaving, setIsSaving] = useState(false);
 
   const initialCashIn = Number(ratingSlip.cash_in) || 0;
   const initialStartTime = ratingSlip.start_time || "";
@@ -132,9 +136,18 @@ export function RatingSlipModal({
         newTableId,
         newSeatNumber: parseInt(newSeatNumber),
       });
+      toast({
+        title: "Success",
+        description: "Player moved successfully",
+      });
       onClose();
     } catch (error) {
       console.error("Error moving player:", error);
+      toast({
+        title: "Error",
+        description: "Failed to move player. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -146,9 +159,18 @@ export function RatingSlipModal({
         cashIn: Number(cashIn),
         startTime,
       });
+      toast({
+        title: "Success",
+        description: "Rating slip updated successfully",
+      });
       onClose();
     } catch (error) {
       console.error("Error saving rating slip:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update rating slip. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -299,7 +321,7 @@ export function RatingSlipModal({
                 type="button"
                 variant="outline"
                 className="h-12 w-12 p-0"
-                onClick={() => handleStartTimeChange("subtract", 5)}
+                onClick={() => handleStartTimeChange("subtract", 15)}
               >
                 <Minus className="h-6 w-6" />
               </Button>
@@ -313,7 +335,7 @@ export function RatingSlipModal({
                 type="button"
                 variant="outline"
                 className="h-12 w-12 p-0"
-                onClick={() => handleStartTimeChange("add", 5)}
+                onClick={() => handleStartTimeChange("add", 15)}
               >
                 <Plus className="h-6 w-6" />
               </Button>
@@ -322,27 +344,16 @@ export function RatingSlipModal({
               Total Change: {getTotalTimeChange() > 0 ? "+" : ""}
               {getTotalTimeChange()} minutes
             </div>
-            <div className="grid grid-cols-5 gap-2 mt-2">
-              {[5, 15, 30, 60, 120].map((minutes) => (
-                <Button
-                  key={minutes}
-                  type="button"
-                  variant="outline"
-                  className="h-12 text-lg"
-                  onClick={() => handleStartTimeChange("add", minutes)}
-                >
-                  +{minutes}m
-                </Button>
-              ))}
-            </div>
           </div>
 
           <div>
-            <label className="text-sm font-medium">Move Player</label>
-            <div className="grid grid-cols-2 gap-4 mt-2">
-              <Select onValueChange={setNewTableId} value={newTableId}>
+            <div className="flex justify-between items-center">
+              <label className="text-sm font-medium">Move Player</label>
+            </div>
+            <div className="grid grid-cols-2 gap-2 mt-1">
+              <Select value={newTableId} onValueChange={setNewTableId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a table" />
+                  <SelectValue placeholder="Select table" />
                 </SelectTrigger>
                 <SelectContent>
                   {tables.map((table) => (
@@ -354,29 +365,28 @@ export function RatingSlipModal({
               </Select>
               <Input
                 type="number"
-                placeholder="New Seat Number"
+                placeholder="Seat number"
                 value={newSeatNumber}
                 onChange={(e) => setNewSeatNumber(e.target.value)}
               />
             </div>
+            <Button
+              type="button"
+              className="w-full mt-2"
+              onClick={handleMovePlayer}
+              disabled={isUpdating || !newTableId || !newSeatNumber}
+            >
+              {isUpdating ? "Moving..." : "Move Player"}
+            </Button>
           </div>
-        </div>
-        <div className="flex justify-end space-x-2 mt-4">
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
+
           <Button
+            type="button"
+            className="w-full"
             onClick={handleSave}
             disabled={isUpdatingDetails}
-            variant="secondary"
           >
             {isUpdatingDetails ? "Saving..." : "Save Changes"}
-          </Button>
-          <Button
-            onClick={handleMovePlayer}
-            disabled={isUpdating || !newTableId || !newSeatNumber}
-          >
-            {isUpdating ? "Moving..." : "Move Player"}
           </Button>
         </div>
       </DialogContent>
