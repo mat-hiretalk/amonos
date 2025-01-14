@@ -7,6 +7,7 @@ type Player = Database["public"]["Tables"]["player"]["Row"] & {
 };
 
 interface PlayerState {
+  players: Player[];
   selectedPlayer: Player | null;
   searchTerm: string;
   searchResults: Player[];
@@ -16,19 +17,21 @@ interface PlayerState {
   setSearchResults: (results: Player[]) => void;
   setIsSearching: (searching: boolean) => void;
   clearSearch: () => void;
+  setPlayers: (players: Player[]) => void;
 }
 
 export const usePlayerStore = create<PlayerState>()(
   devtools(
     (set) => ({
+      players: [],
       selectedPlayer: null,
       searchTerm: '',
       searchResults: [],
       isSearching: false,
-      setSelectedPlayer: (player) => set({ selectedPlayer: player }, false, 'setSelectedPlayer'),
-      setSearchTerm: (term) => set({ searchTerm: term }, false, 'setSearchTerm'),
-      setSearchResults: (results) => set({ searchResults: results }, false, 'setSearchResults'),
-      setIsSearching: (searching) => set({ isSearching: searching }, false, 'setIsSearching'),
+      setSelectedPlayer: (player) => set({ selectedPlayer: player }),
+      setSearchTerm: (term) => set({ searchTerm: term }),
+      setSearchResults: (results) => set({ searchResults: results }),
+      setIsSearching: (searching) => set({ isSearching: searching }),
       clearSearch: () => 
         set(
           { 
@@ -39,6 +42,7 @@ export const usePlayerStore = create<PlayerState>()(
           false, 
           'clearSearch'
         ),
+      setPlayers: (players) => set({ players }),
     }),
     {
       name: 'Player Store',

@@ -16,7 +16,7 @@ const Table = React.forwardRef<
 ));
 Table.displayName = "Table";
 
-console.log("Table component", Table);
+// console.log("Table component", Table);
 
 const TableHeader = React.forwardRef<
   HTMLTableSectionElement,

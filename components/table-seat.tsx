@@ -32,10 +32,20 @@ export function TableSeat({
 }: TableSeatProps) {
   const [isRatingSlipOpen, setIsRatingSlipOpen] = useState(false);
 
+  useEffect(() => {
+    console.log(`TableSeat ${seatNumber} - occupiedBy:`, occupiedBy);
+  }, [occupiedBy, seatNumber]);
+
   const handleClick = () => {
-    if (occupiedBy) {
+    console.log(
+      `TableSeat ${seatNumber} - handleClick - occupiedBy:`,
+      occupiedBy
+    );
+    if (occupiedBy?.id) {
+      console.log(`TableSeat ${seatNumber} - Opening rating slip modal`);
       setIsRatingSlipOpen(true);
     } else {
+      console.log(`TableSeat ${seatNumber} - Triggering player search`);
       onSeatPlayer(seatNumber);
     }
   };
@@ -75,7 +85,7 @@ export function TableSeat({
         </div>
       </Button>
 
-      {occupiedBy && (
+      {occupiedBy?.id && (
         <RatingSlipModal
           ratingSlip={occupiedBy}
           isOpen={isRatingSlipOpen}

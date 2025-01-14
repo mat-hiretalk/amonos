@@ -63,12 +63,31 @@ export default function CasinoTable({
     setMode("seat");
   };
 
+  // Memoize the rating slips mapping separately
+  const seatRatingSlips = useMemo(() => {
+    const ratingSlipMap = new Map<number, RatingSlip>();
+
+    table.ratingSlips.forEach((slip) => {
+      if (slip.seat_number) {
+        ratingSlipMap.set(slip.seat_number, slip);
+      }
+    });
+
+    return ratingSlipMap;
+  }, [table.ratingSlips]);
+
   const tableSeats = useMemo(() => {
     return table.seats.map((player, index) => {
       const seatNumber = index + 1;
-      const occupiedBy = table.ratingSlips.find(
-        (slip) => slip.seat_number === seatNumber
-      );
+      const occupiedBy = seatRatingSlips.get(seatNumber);
+      
+
+      console.log(`Table ${table.id}, Seat ${seatNumber}:`, {
+        player,
+        occupiedBy,
+        hasRatingSlip: seatRatingSlips.has(seatNumber),
+        totalRatingSlips: table.ratingSlips.length,
+      });
 
       return (
         <TableSeat
@@ -81,7 +100,7 @@ export default function CasinoTable({
         />
       );
     });
-  }, [table.id, table.seats, table.ratingSlips, tables, handleSeatPlayer]);
+  }, [table.id, table.seats, seatRatingSlips, tables, handleSeatPlayer]);
 
   return (
     <Card

@@ -196,15 +196,25 @@ export default function PitStation() {
         </header>
 
         <div className="flex-1 p-4">
-          <Tabs defaultValue="active" className="h-full space-y-6">
+          <Tabs defaultValue="floor" className="h-full space-y-6">
             <div className="space-between flex items-center">
               <TabsList>
+                <TabsTrigger value="floor">Floor View</TabsTrigger>
                 <TabsTrigger value="active" className="relative">
                   Active Players
                 </TabsTrigger>
-                <TabsTrigger value="floor">Floor View</TabsTrigger>
               </TabsList>
             </div>
+
+            <TabsContent value="floor">
+              {selectedCasino ? (
+                <CasinoFloorView casinoId={selectedCasino} />
+              ) : (
+                <div className="text-center py-4">
+                  Please select a casino first
+                </div>
+              )}
+            </TabsContent>
 
             <TabsContent value="active" className="border-none p-0">
               <Table>
@@ -242,16 +252,6 @@ export default function PitStation() {
                   ))}
                 </TableBody>
               </Table>
-            </TabsContent>
-
-            <TabsContent value="floor">
-              {selectedCasino ? (
-                <CasinoFloorView casinoId={selectedCasino} />
-              ) : (
-                <div className="text-center py-4">
-                  Please select a casino first
-                </div>
-              )}
             </TabsContent>
           </Tabs>
         </div>

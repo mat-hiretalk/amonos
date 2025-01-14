@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -173,6 +173,14 @@ export function RatingSlipModal({
       });
     }
   };
+
+  useEffect(() => {
+    setAverageBet(ratingSlip.average_bet.toString());
+    setStartTime(ratingSlip.start_time || "");
+    setCashIn(ratingSlip.cash_in?.toString() || "0");
+    setNewTableId(ratingSlip.gaming_table_id || "");
+    setNewSeatNumber(ratingSlip.seat_number?.toString() || "");
+  }, [ratingSlip]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

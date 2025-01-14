@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from "@/utils/supabase/client";
-import { useTableStore } from "@/store/table-store";
-import { fetchActiveRatingSlips } from "@/app/actions/casino";
+import { updateRatingSlipDetails } from '@/app/actions/casino';
 
 interface UpdateRatingSlipParams {
   ratingSlipId: string;
@@ -17,59 +16,12 @@ interface UpdateDetailsParams {
 }
 
 export function useRatingSlips() {
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [isUpdatingDetails, setIsUpdatingDetails] = useState(false);
-  const { tables, setTables } = useTableStore();
+  const queryClient = useQueryClient();
   const supabase = createClient();
 
-  const updateTableState = async () => {
-    const activeRatingSlips = await fetchActiveRatingSlips();
-    
-    const updatedTables = tables.map((table) => {
-      const tableRatingSlips = activeRatingSlips.filter(
-        (slip) => slip.gaming_table_id === table.id
-      );
-
-      const seats = table.seats.map((_, index) => {
-        const seatNumber = index + 1;
-        const ratingSlip = tableRatingSlips.find(
-          (slip) => slip.seat_number === seatNumber
-        );
-        if (ratingSlip?.visit?.player) {
-          return {
-            id: ratingSlip.playerId,
-            firstName: ratingSlip.visit.player.firstName,
-            lastName: ratingSlip.visit.player.lastName,
-            email: "",
-            company_id: null,
-            dob: null,
-            phone_number: null,
-          };
-        }
-        return null;
-      });
-
-      return {
-        ...table,
-        seats,
-        averageBet: tableRatingSlips.reduce(
-          (sum, slip) => sum + Number(slip.average_bet),
-          0
-        ),
-        ratingSlips: tableRatingSlips,
-      };
-    });
-
-    setTables(updatedTables);
-  };
-
-  const updateRatingSlip = async ({
-    ratingSlipId,
-    newTableId,
-    newSeatNumber,
-  }: UpdateRatingSlipParams) => {
-    setIsUpdating(true);
-    try {
+  const updateRatingSlipMutation = useMutation({
+    mutationFn: async ({ ratingSlipId, newTableId, newSeatNumber }: UpdateRatingSlipParams) => {
+      console.log("Updating rating slip:", { ratingSlipId, newTableId, newSeatNumber });
       const { error } = await supabase
         .from("ratingslip")
         .update({
@@ -79,46 +31,35 @@ export function useRatingSlips() {
         .eq("id", ratingSlipId);
 
       if (error) throw error;
-      await updateTableState();
-    } catch (error) {
-      console.error("Error updating rating slip:", error);
-      throw error;
-    } finally {
-      setIsUpdating(false);
-    }
-  };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tables'] });
+    },
+  });
 
-  const updateDetails = async ({
-    ratingSlipId,
-    averageBet,
-    cashIn,
-    startTime,
-  }: UpdateDetailsParams) => {
-    setIsUpdatingDetails(true);
-    try {
-      const { error } = await supabase
-        .from("ratingslip")
-        .update({
-          average_bet: averageBet,
-          cash_in: cashIn,
-          start_time: startTime,
-        })
-        .eq("id", ratingSlipId);
-
-      if (error) throw error;
-      await updateTableState();
-    } catch (error) {
-      console.error("Error updating rating slip details:", error);
-      throw error;
-    } finally {
-      setIsUpdatingDetails(false);
-    }
-  };
+  const updateDetailsMutation = useMutation({
+    mutationFn: async ({ ratingSlipId, averageBet, cashIn, startTime }: UpdateDetailsParams) => {
+      console.log("Updating rating slip details:", {
+        ratingSlipId,
+        averageBet,
+        cashIn,
+        startTime,
+      });
+      await updateRatingSlipDetails(ratingSlipId, {
+        averageBet,
+        cashIn,
+        startTime,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tables'] });
+    },
+  });
 
   return {
-    updateRatingSlip,
-    updateDetails,
-    isUpdating,
-    isUpdatingDetails,
+    updateRatingSlip: updateRatingSlipMutation.mutate,
+    updateDetails: updateDetailsMutation.mutate,
+    isUpdating: updateRatingSlipMutation.isPending,
+    isUpdatingDetails: updateDetailsMutation.isPending,
   };
 } 

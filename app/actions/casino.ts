@@ -112,7 +112,7 @@ export async function fetchActiveRatingSlips() {
       }
     }));
 
-    console.log("Serialized rating slips:", JSON.stringify(serializedSlips, null, 2));
+    // console.log("Serialized rating slips:", JSON.stringify(serializedSlips, null, 2));
     return serializedSlips;
   } catch (error) {
     console.error("Error fetching active rating slips:", error);
