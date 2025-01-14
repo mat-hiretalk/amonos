@@ -1,36 +1,32 @@
 "use client";
 
-import { useAtom } from "jotai";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { searchPlayers } from "@/app/actions/player";
-import {
-  searchTermAtom,
-  searchResultsAtom,
-  isSearchLoadingAtom,
-} from "@/store/atoms";
-import { useCasinoStore } from "@/store/casino-store";
+import { usePlayerStore } from "@/store/player-store";
 
 export function PlayerSearchModal() {
-  // Local state with Jotai
-  const [searchTerm, setSearchTerm] = useAtom(searchTermAtom);
-  const [searchResults, setSearchResults] = useAtom(searchResultsAtom);
-  const [isLoading, setIsLoading] = useAtom(isSearchLoadingAtom);
-
-  // Global state with Zustand
-  const { setSelectedPlayer } = useCasinoStore();
+  const {
+    searchTerm,
+    searchResults,
+    isSearching,
+    setSearchTerm,
+    setSearchResults,
+    setIsSearching,
+    setSelectedPlayer,
+  } = usePlayerStore();
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) return;
 
-    setIsLoading(true);
+    setIsSearching(true);
     try {
       const players = await searchPlayers(searchTerm);
       setSearchResults(players);
     } catch (error) {
       console.error("Error searching players:", error);
     } finally {
-      setIsLoading(false);
+      setIsSearching(false);
     }
   };
 
@@ -44,7 +40,7 @@ export function PlayerSearchModal() {
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           className="w-full border border-red-400"
         />
-        <Button onClick={handleSearch} disabled={isLoading}>
+        <Button onClick={handleSearch} disabled={isSearching}>
           Search
         </Button>
       </div>

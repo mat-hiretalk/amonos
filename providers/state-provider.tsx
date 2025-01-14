@@ -3,6 +3,7 @@
 import { Provider } from "jotai";
 import { ReactNode } from "react";
 import { QueryProvider } from "@/app/client-layout";
+import { JotaiDevtools } from "@/components/debug/jotai-devtools";
 
 interface StateProviderProps {
   children: ReactNode;
@@ -11,7 +12,10 @@ interface StateProviderProps {
 export function StateProvider({ children }: StateProviderProps) {
   return (
     <QueryProvider>
-      <Provider>{children}</Provider>
+      <Provider>
+        {children}
+        <JotaiDevtools />
+      </Provider>
     </QueryProvider>
   );
 }

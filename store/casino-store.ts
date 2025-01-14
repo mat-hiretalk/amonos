@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { devtools } from 'zustand/middleware';
 import { Database } from '@/database.types';
 
 type Player = Database["public"]["Tables"]["player"]["Row"] & {
@@ -14,11 +15,19 @@ interface CasinoState {
   setSelectedPlayer: (player: Player | null) => void;
 }
 
-export const useCasinoStore = create<CasinoState>((set) => ({
-  selectedCasino: '',
-  mode: 'seat',
-  selectedPlayer: null,
-  setSelectedCasino: (casino) => set({ selectedCasino: casino }),
-  setMode: (mode) => set({ mode }),
-  setSelectedPlayer: (player) => set({ selectedPlayer: player }),
-})); 
+export const useCasinoStore = create<CasinoState>()(
+  devtools(
+    (set) => ({
+      selectedCasino: '',
+      mode: 'seat',
+      selectedPlayer: null,
+      setSelectedCasino: (casino) => set({ selectedCasino: casino }, false, 'setSelectedCasino'),
+      setMode: (mode) => set({ mode }, false, 'setMode'),
+      setSelectedPlayer: (player) => set({ selectedPlayer: player }, false, 'setSelectedPlayer'),
+    }),
+    {
+      name: 'Casino Store',
+      enabled: process.env.NODE_ENV === 'development'
+    }
+  )
+); 
