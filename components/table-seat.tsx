@@ -32,13 +32,6 @@ export function TableSeat({
 }: TableSeatProps) {
   const [isRatingSlipOpen, setIsRatingSlipOpen] = useState(false);
 
-  useEffect(() => {
-    console.log(
-      `TableSeat ${seatNumber} rendered with occupiedBy:`,
-      JSON.stringify(occupiedBy, null, 2)
-    );
-  }, [seatNumber, occupiedBy]);
-
   const handleClick = () => {
     if (occupiedBy) {
       setIsRatingSlipOpen(true);
@@ -47,10 +40,12 @@ export function TableSeat({
     }
   };
 
+  const displayPlayer = player || (occupiedBy?.visit?.player ?? null);
+
   return (
     <div>
       <Button
-        variant={occupiedBy ? "default" : "outline"}
+        variant={displayPlayer ? "default" : "outline"}
         className="w-full h-24 relative"
         onClick={handleClick}
       >
@@ -58,17 +53,21 @@ export function TableSeat({
           Seat {seatNumber}
         </div>
         <div className="flex flex-col items-center justify-center">
-          {occupiedBy ? (
+          {displayPlayer ? (
             <>
               <span className="font-bold">
-                {occupiedBy.visit?.player?.firstName || "Unknown"}
+                {displayPlayer.firstName || "Unknown"}
               </span>
-              <span className="text-xs opacity-70">
-                ${occupiedBy.average_bet}
-              </span>
-              <span className="text-xs opacity-70">
-                Cash In: ${occupiedBy.cash_in || 0}
-              </span>
+              {occupiedBy && (
+                <>
+                  <span className="text-xs opacity-70">
+                    ${occupiedBy.average_bet}
+                  </span>
+                  <span className="text-xs opacity-70">
+                    Cash In: ${occupiedBy.cash_in || 0}
+                  </span>
+                </>
+              )}
             </>
           ) : (
             <span className="opacity-50">Empty</span>
