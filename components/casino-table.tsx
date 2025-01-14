@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from "react";
+import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -49,16 +49,8 @@ export default function CasinoTable({
   const { setMode } = useCasinoStore();
   const { setSelectedTable, setSelectedSeat, selectedSeat } = useTableStore();
 
-  useEffect(() => {
-    if (table.id) {
-      setSelectedTable(table.id);
-    }
-    return () => {
-      setSelectedTable(null);
-    };
-  }, [table.id, setSelectedTable]);
-
   const handleSeatPlayer = (seatNumber: number) => {
+    setSelectedTable(table.id);
     setSelectedSeat(seatNumber);
     setMode("seat");
   };
@@ -80,7 +72,6 @@ export default function CasinoTable({
     return table.seats.map((player, index) => {
       const seatNumber = index + 1;
       const occupiedBy = seatRatingSlips.get(seatNumber);
-      
 
       console.log(`Table ${table.id}, Seat ${seatNumber}:`, {
         player,
