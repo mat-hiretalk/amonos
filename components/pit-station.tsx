@@ -123,7 +123,7 @@ export default function PitStation() {
   }, [selectedCasino]);
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-background">
+    <div className="fixed inset-0 w-screen h-screen bg-background overflow-y-auto m-auto mb-5">
       <div className="flex-1 flex flex-col">
         <header className="border-b">
           <div className="flex items-center justify-between p-4">

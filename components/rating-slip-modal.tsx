@@ -10,7 +10,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Database } from "@/database.types";
-import { Plus, Minus } from "lucide-react";
+import { Plus, Minus, CirclePause } from "lucide-react";
 import {
   Select,
   SelectContent,
