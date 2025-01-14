@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { Bell, History, Menu, Search, User, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -33,37 +32,30 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-
-interface Player {
-  id: string;
-  firstName: string;
-  type: string;
-  gamingtable: string;
-  seat: number;
-  avgBet: number;
-  cashIn: number;
-  startTime: string;
-  duration: string;
-  status: "active" | "inactive" | "warning";
-}
+import { useCasinoStore } from "@/store/casino-store";
 
 interface Visit {
   id: string;
-  player_id: string | null;
+  player_id: string;
   check_in_date: string;
   check_out_date: string | null;
   player: {
-    firstName: string | null;
+    firstName: string;
   };
 }
 
+const getElapsedTime = (startTime: string) => {
+  const start = new Date(startTime);
+  const now = new Date();
+  const diff = Math.floor((now.getTime() - start.getTime()) / (1000 * 60)); // minutes
+  return diff < 60 ? `${diff}m` : `${Math.floor(diff / 60)}h ${diff % 60}m`;
+};
+
 export default function PitStation() {
-  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
-  const [selectedCasino, setSelectedCasino] = useState<string>("");
+  const { selectedCasino } = useCasinoStore();
   const [activeVisits, setActiveVisits] = useState<Visit[]>([]);
   const supabase = createClient();
 
-  // Fetch active visits when casino changes
   useEffect(() => {
     if (!selectedCasino) return;
 
@@ -82,23 +74,33 @@ export default function PitStation() {
         .eq("casino_id", selectedCasino)
         .is("check_out_date", null)
         .order("check_in_date", { ascending: false });
-      console.log("Data from pit station from visit", data);
+
       if (error) {
         console.error("Error fetching visits:", error);
         return;
       }
 
-      const formattedData = data.map((visit) => ({
-        ...visit,
-        player: Array.isArray(visit.player) ? visit.player[0] : visit.player,
-      }));
-      console.log("formatted data", formattedData);
+      if (!data) return;
+
+      const formattedData: Visit[] = data
+        .filter((visit) => visit.player_id !== null)
+        .map((visit) => ({
+          id: visit.id,
+          player_id: visit.player_id!,
+          check_in_date: visit.check_in_date,
+          check_out_date: visit.check_out_date,
+          player: {
+            firstName: Array.isArray(visit.player)
+              ? visit.player[0]?.firstName || ""
+              : visit.player?.firstName || "",
+          },
+        }));
+
       setActiveVisits(formattedData);
     };
-    console.log("acitve vistits form the pit", activeVisits);
+
     fetchActiveVisits();
 
-    // Subscribe to changes in visits
     const channel = supabase
       .channel("visits_changes")
       .on(
@@ -119,10 +121,6 @@ export default function PitStation() {
       supabase.removeChannel(channel);
     };
   }, [selectedCasino]);
-
-  const handleCasinoChange = (casinoId: string) => {
-    setSelectedCasino(casinoId);
-  };
 
   return (
     <div className="fixed inset-0 w-screen h-screen bg-background">
@@ -165,7 +163,7 @@ export default function PitStation() {
               <h1 className="text-xl font-bold">Pit Station</h1>
             </div>
             <div className="flex items-center gap-4">
-              <CasinoSelector onCasinoChange={handleCasinoChange} />
+              <CasinoSelector />
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="icon">
                   <Bell className="h-4 w-4" />
@@ -188,14 +186,7 @@ export default function PitStation() {
                 <DialogHeader>
                   <DialogTitle>Search Players</DialogTitle>
                 </DialogHeader>
-                <PlayerSearchModal
-                  selectedCasino={selectedCasino}
-                  mode="visit"
-                  onPlayerSelected={(player) => {
-                    //  TODO: Handle player selection for visit mode
-                    console.log("Selected player:", player);
-                  }}
-                />
+                <PlayerSearchModal />
               </DialogContent>
             </Dialog>
             {selectedCasino && (
@@ -204,51 +195,51 @@ export default function PitStation() {
           </div>
         </header>
 
-        <div className="flex-1 p-4 overflow-auto">
-          <Tabs defaultValue="floor" className="w-full">
-            <TabsList className="mb-4">
-              <TabsTrigger value="floor">Casino Floor</TabsTrigger>
-              <TabsTrigger value="visitors">Visitor View</TabsTrigger>
-            </TabsList>
+        <div className="flex-1 p-4">
+          <Tabs defaultValue="active" className="h-full space-y-6">
+            <div className="space-between flex items-center">
+              <TabsList>
+                <TabsTrigger value="active" className="relative">
+                  Active Players
+                </TabsTrigger>
+                <TabsTrigger value="floor">Floor View</TabsTrigger>
+              </TabsList>
+            </div>
 
-            <TabsContent value="visitors">
+            <TabsContent value="active" className="border-none p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Player</TableHead>
-                    <TableHead>Check In Time</TableHead>
+                    <TableHead>Check-in Time</TableHead>
                     <TableHead>Duration</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {activeVisits.map((visit) => {
-                    console.log("Visit map from pit station", visit);
-                    const duration =
-                      new Date().getTime() -
-                      new Date(visit.check_in_date).getTime();
-                    const hours = Math.floor(duration / (1000 * 60 * 60));
-                    const minutes = Math.floor(
-                      (duration % (1000 * 60 * 60)) / (1000 * 60)
-                    );
-
-                    return (
-                      <TableRow key={visit.id}>
-                        <TableCell className="font-medium">
-                          {visit.player.firstName || "Unknown"}
-                        </TableCell>
-                        <TableCell>
-                          {new Date(visit.check_in_date).toLocaleTimeString()}
-                        </TableCell>
-                        <TableCell>{`${hours}:${minutes.toString().padStart(2, "0")}`}</TableCell>
-                        <TableCell>
-                          <Button variant="outline" size="sm">
-                            View Details
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                  {activeVisits.map((visit) => (
+                    <TableRow key={visit.id}>
+                      <TableCell>{visit.player.firstName}</TableCell>
+                      <TableCell>
+                        {new Date(visit.check_in_date).toLocaleString()}
+                      </TableCell>
+                      <TableCell>
+                        {getElapsedTime(visit.check_in_date)}
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-green-500">Active</span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon">
+                          <History className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon">
+                          <User className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </TabsContent>
@@ -265,85 +256,6 @@ export default function PitStation() {
           </Tabs>
         </div>
       </div>
-
-      {/* Right Sidebar - Player Details */}
-      <Sheet
-        open={!!selectedPlayer}
-        onOpenChange={() => setSelectedPlayer(null)}
-      >
-        <SheetContent className="w-full sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle>Player Details</SheetTitle>
-          </SheetHeader>
-          {selectedPlayer && (
-            <div className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Rating Information</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Tabs defaultValue="rating">
-                    <TabsList className="grid w-full grid-cols-4">
-                      <TabsTrigger value="rating">Rating</TabsTrigger>
-                      <TabsTrigger value="history">History</TabsTrigger>
-                      <TabsTrigger value="traits">Traits</TabsTrigger>
-                      <TabsTrigger value="denoms">Denoms</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="rating" className="space-y-4">
-                      <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="text-sm font-medium">Table</label>
-                            <div className="mt-1">
-                              {selectedPlayer.gamingtable}
-                            </div>
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium">Seat</label>
-                            <div className="mt-1">{selectedPlayer.seat}</div>
-                          </div>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">
-                            Average Bet
-                          </label>
-                          <div className="mt-1">${selectedPlayer.avgBet}</div>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">Cash In</label>
-                          <div className="mt-1">${selectedPlayer.cashIn}</div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="text-sm font-medium">
-                              Start Time
-                            </label>
-                            <div className="mt-1">
-                              {selectedPlayer.startTime}
-                            </div>
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium">
-                              Duration
-                            </label>
-                            <div className="mt-1">
-                              {selectedPlayer.duration}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline">Close Rating</Button>
-                        <Button>Move</Button>
-                      </div>
-                    </TabsContent>
-                  </Tabs>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }

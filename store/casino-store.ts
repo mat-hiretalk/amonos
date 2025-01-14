@@ -2,28 +2,33 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { Database } from '@/database.types';
 
-type Player = Database["public"]["Tables"]["player"]["Row"] & {
-  ratingslipId?: string | null;
+type Casino = {
+  id: string;
+  name: string;
 };
 
 interface CasinoState {
+  casinos: Casino[];
   selectedCasino: string;
   mode: 'seat' | 'visit';
-  selectedPlayer: Player | null;
+  isLoading: boolean;
+  setCasinos: (casinos: Casino[]) => void;
   setSelectedCasino: (casino: string) => void;
   setMode: (mode: 'seat' | 'visit') => void;
-  setSelectedPlayer: (player: Player | null) => void;
+  setIsLoading: (loading: boolean) => void;
 }
 
 export const useCasinoStore = create<CasinoState>()(
   devtools(
     (set) => ({
+      casinos: [],
       selectedCasino: '',
       mode: 'seat',
-      selectedPlayer: null,
+      isLoading: false,
+      setCasinos: (casinos) => set({ casinos }, false, 'setCasinos'),
       setSelectedCasino: (casino) => set({ selectedCasino: casino }, false, 'setSelectedCasino'),
       setMode: (mode) => set({ mode }, false, 'setMode'),
-      setSelectedPlayer: (player) => set({ selectedPlayer: player }, false, 'setSelectedPlayer'),
+      setIsLoading: (loading) => set({ isLoading: loading }, false, 'setIsLoading'),
     }),
     {
       name: 'Casino Store',

@@ -1,58 +1,62 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import { createClient } from '@/utils/supabase/client'
+import { useEffect } from "react";
+import { createClient } from "@/utils/supabase/client";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
+import { useCasinoStore } from "@/store/casino-store";
 
-interface Casino {
-  id: string
-  name: string
-}
+export function CasinoSelector() {
+  const {
+    casinos,
+    selectedCasino,
+    isLoading,
+    setCasinos,
+    setSelectedCasino,
+    setIsLoading,
+  } = useCasinoStore();
 
-interface CasinoSelectorProps {
-  onCasinoChange: (casinoId: string) => void
-}
-
-export function CasinoSelector({ onCasinoChange }: CasinoSelectorProps) {
-  const [casinos, setCasinos] = useState<Casino[]>([])
-  const [selectedCasino, setSelectedCasino] = useState<string>('')
-  const supabase = createClient()
+  const supabase = createClient();
 
   useEffect(() => {
     const fetchCasinos = async () => {
-      const { data, error } = await supabase
-        .from('casino')
-        .select('id, name')
-        .order('name')
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("casino")
+          .select("id, name")
+          .order("name");
 
-      if (error) {
-        console.error('Error fetching casinos:', error)
-        return
+        if (error) {
+          console.error("Error fetching casinos:", error);
+          return;
+        }
+
+        setCasinos(data || []);
+        if (data && data.length > 0 && !selectedCasino) {
+          setSelectedCasino(data[0].id);
+        }
+      } catch (error) {
+        console.error("Error fetching casinos:", error);
+      } finally {
+        setIsLoading(false);
       }
+    };
 
-      setCasinos(data || [])
-      if (data && data.length > 0) {
-        setSelectedCasino(data[0].id)
-        onCasinoChange(data[0].id)
-      }
-    }
-
-    fetchCasinos()
-  }, [onCasinoChange])
-
-  const handleCasinoChange = (value: string) => {
-    setSelectedCasino(value)
-    onCasinoChange(value)
-  }
+    fetchCasinos();
+  }, []);
 
   return (
-    <Select value={selectedCasino} onValueChange={handleCasinoChange}>
+    <Select
+      value={selectedCasino}
+      onValueChange={setSelectedCasino}
+      disabled={isLoading}
+    >
       <SelectTrigger className="w-[200px]">
         <SelectValue placeholder="Select a casino" />
       </SelectTrigger>
@@ -64,5 +68,5 @@ export function CasinoSelector({ onCasinoChange }: CasinoSelectorProps) {
         ))}
       </SelectContent>
     </Select>
-  )
-} 
+  );
+}
