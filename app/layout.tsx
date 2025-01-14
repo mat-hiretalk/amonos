@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import {QueryProvider} from "./client-layout";
+import { StateProvider } from "@/providers/state-provider";
 
 const inter = Inter({ subsets: ["latin"] });
+
+export const metadata: Metadata = {
+  title: "Amonos",
+  description: "Casino Management System",
+};
 
 export default function RootLayout({
   children,
@@ -12,7 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <QueryProvider>{children}</QueryProvider>
+        <StateProvider>{children}</StateProvider>
       </body>
     </html>
   );

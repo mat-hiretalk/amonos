@@ -1,29 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useAtom } from "jotai";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Database } from "@/database.types";
 import { searchPlayers } from "@/app/actions/player";
+import {
+  searchTermAtom,
+  searchResultsAtom,
+  isSearchLoadingAtom,
+} from "@/store/atoms";
+import { useCasinoStore } from "@/store/casino-store";
 
-type Player = Database["public"]["Tables"]["player"]["Row"] & {
-  ratingslipId?: string | null;
-};
+export function PlayerSearchModal() {
+  // Local state with Jotai
+  const [searchTerm, setSearchTerm] = useAtom(searchTermAtom);
+  const [searchResults, setSearchResults] = useAtom(searchResultsAtom);
+  const [isLoading, setIsLoading] = useAtom(isSearchLoadingAtom);
 
-interface PlayerSearchModalProps {
-  selectedCasino: string;
-  mode: "seat" | "visit";
-  onPlayerSelected: (player: Player) => void;
-}
-
-export function PlayerSearchModal({
-  selectedCasino,
-  mode,
-  onPlayerSelected,
-}: PlayerSearchModalProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [searchResults, setSearchResults] = useState<Player[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  // Global state with Zustand
+  const { setSelectedPlayer } = useCasinoStore();
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) return;
@@ -59,7 +54,7 @@ export function PlayerSearchModal({
           <div
             key={player.id}
             className="p-3 border rounded-lg hover:bg-muted cursor-pointer"
-            onClick={() => onPlayerSelected(player)}
+            onClick={() => setSelectedPlayer(player)}
           >
             <div className="font-medium">
               {player.firstName} {player.lastName}
