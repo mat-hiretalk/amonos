@@ -33,6 +33,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useCasinoStore } from "@/store/casino-store";
+import { signOutAction } from "@/app/actions";
 
 interface Visit {
   id: string;
@@ -151,12 +152,15 @@ export default function PitStation() {
                     <Button variant="ghost" className="justify-start">
                       Issue Reward
                     </Button>
-                    <Button
-                      variant="ghost"
-                      className="justify-start text-red-500"
-                    >
-                      Log Out
-                    </Button>
+                    <form action={signOutAction}>
+                      <Button
+                        type="submit"
+                        variant="ghost"
+                        className="justify-start text-red-500 w-full"
+                      >
+                        Log Out
+                      </Button>
+                    </form>
                   </div>
                 </SheetContent>
               </Sheet>
